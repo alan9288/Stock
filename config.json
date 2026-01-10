@@ -1,0 +1,27 @@
+{
+  "TW": {
+    "thresholds": "+3 +5 -5 -10",
+    "groups": {
+      "test": [
+        "0050.TW",
+        "2330.TW"
+      ],
+      "test1": [
+        "0056.TW"
+      ]
+    }
+  },
+  "US": {
+    "thresholds": "+5 +10 -1 -10",
+    "groups": {
+      "test3": [
+        "NVDA",
+        "TSLA"
+      ],
+      "test4": [
+        "GOOG",
+        "QQQ"
+      ]
+    }
+  }
+}
