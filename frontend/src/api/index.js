@@ -1,7 +1,13 @@
 import axios from 'axios'
 
 // 根據環境設定 API 基礎 URL
-const API_BASE_URL = import.meta.env.VITE_API_URL || '/api'
+// 生產環境判斷：如果不是 localhost，則使用 Railway 後端
+const isProduction = typeof window !== 'undefined' && !window.location.hostname.includes('localhost')
+const API_BASE_URL = isProduction
+    ? 'https://stock-production-c537.up.railway.app/api'
+    : (import.meta.env.VITE_API_URL || '/api')
+
+console.log('API Base URL:', API_BASE_URL)
 
 const api = axios.create({
     baseURL: API_BASE_URL,
