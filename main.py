@@ -35,10 +35,16 @@ app.include_router(notifications_router)
 app.include_router(watchlist_router)
 app.include_router(reports_router)
 
-# CORS 設定（允許 Vue 開發伺服器）
+# CORS 設定（允許 Vue 開發伺服器和生產環境）
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_origins=[
+        "http://localhost:5173", 
+        "http://127.0.0.1:5173",
+        "https://frontend-alan9288s-projects.vercel.app",
+        "https://stock-jade-gamma.vercel.app",
+        "*"  # 允許所有來源（生產環境建議改為具體域名）
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
