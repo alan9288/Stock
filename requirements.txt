@@ -3,3 +3,15 @@ uvicorn[standard]
 yfinance
 pytz
 pydantic
+python-dotenv
+requests
+
+# 資料庫
+asyncpg
+sqlalchemy[asyncio]
+psycopg2-binary
+
+# 認證
+python-jose[cryptography]
+passlib[bcrypt]
+bcrypt

@@ -5,6 +5,46 @@ const api = axios.create({
     timeout: 30000
 })
 
+// ==========================================
+// 請求攔截器：自動附帶 Authorization Token
+// ==========================================
+api.interceptors.request.use(
+    (config) => {
+        const token = localStorage.getItem('token')
+        if (token) {
+            config.headers.Authorization = `Bearer ${token}`
+        }
+        return config
+    },
+    (error) => {
+        return Promise.reject(error)
+    }
+)
+
+// ==========================================
+// 回應攔截器：處理認證錯誤
+// ==========================================
+api.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        // 401 未授權：Token 過期或無效
+        if (error.response?.status === 401) {
+            const isAuthRequest = error.config?.url?.includes('/auth/')
+            if (!isAuthRequest) {
+                localStorage.removeItem('token')
+                if (!window.location.pathname.includes('/login')) {
+                    window.location.href = '/login'
+                }
+            }
+        }
+        return Promise.reject(error)
+    }
+)
+
+// ==========================================
+// API 函式
+// ==========================================
+
 // 取得市場狀態
 export async function getMarketStatus() {
     const response = await api.get('/market-status')
@@ -17,27 +57,15 @@ export async function getStocks() {
     return response.data
 }
 
-// 取得設定
-export async function getConfig() {
-    const response = await api.get('/config')
+// 驗證股票代號是否有效
+export async function validateStock(symbol, market = 'US') {
+    const response = await api.get(`/validate-stock/${symbol}?market=${market}`)
     return response.data
 }
 
-// 更新門檻
-export async function updateThresholds(market, thresholds) {
-    const response = await api.put('/config/thresholds', { market, thresholds })
-    return response.data
-}
-
-// 新增群組
-export async function createGroup(market, name, stocks) {
-    const response = await api.post('/groups', { market, name, stocks })
-    return response.data
-}
-
-// 刪除群組
-export async function deleteGroup(market, name) {
-    const response = await api.delete(`/groups/${market}/${name}`)
+// 取得股票歷史資料（用於走勢圖）
+export async function getStockHistory(symbol, market = 'US', period = '1d') {
+    const response = await api.get(`/stocks/${symbol}/history?market=${market}&period=${period}`)
     return response.data
 }
 

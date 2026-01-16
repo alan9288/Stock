@@ -6,15 +6,25 @@
         <h2 class="text-3xl font-bold">即時監控</h2>
         <p class="text-gray-400 mt-1">{{ serverTime }}</p>
       </div>
-      <button 
-        @click="fetchData" 
-        :disabled="loading"
-        class="btn-gradient px-6 py-3 rounded-xl font-semibold flex items-center gap-2"
-      >
-        <span v-if="loading" class="animate-spin">⟳</span>
-        <span v-else>🔄</span>
-        刷新數據
-      </button>
+      <div class="flex items-center gap-4">
+        <!-- 自動刷新倒數 -->
+        <RefreshCountdown :seconds="countdown" :total="refreshInterval" />
+        
+        <button 
+          @click="fetchData" 
+          :disabled="loading"
+          class="btn-gradient px-6 py-3 rounded-xl font-semibold flex items-center gap-2"
+        >
+          <span v-if="loading" class="animate-spin">⟳</span>
+          <span v-else>🔄</span>
+          刷新數據
+        </button>
+      </div>
+    </div>
+
+    <!-- 搜尋列 -->
+    <div class="max-w-md">
+      <StockSearch :stocks="stocks" @select="openChart" />
     </div>
 
     <!-- 市場狀態卡片 -->
@@ -81,6 +91,72 @@
       </div>
     </div>
 
+    <!-- 漲跌幅摘要卡片 -->
+    <div v-if="allStocks.length > 0" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <!-- 今日最佳 -->
+      <div 
+        @click="openChart(bestStock)"
+        class="glass rounded-2xl p-6 border-l-4 border-emerald-400 cursor-pointer hover:bg-white/5 transition-all"
+      >
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-gray-400 text-sm mb-1">📈 今日最佳表現 <span class="text-xs">(點擊查看走勢)</span></p>
+            <p class="text-2xl font-bold">{{ bestStock?.symbol || '--' }}</p>
+            <p class="text-gray-500 text-sm">{{ bestStock?.name || '' }}</p>
+          </div>
+          <div class="text-right">
+            <p class="text-3xl font-bold text-emerald-400">
+              {{ bestStock ? formatChange(bestStock.change_pct) : '--' }}
+            </p>
+            <p class="text-gray-400">${{ bestStock?.price?.toFixed(2) || '--' }}</p>
+          </div>
+        </div>
+        <div class="mt-4 flex items-center gap-1">
+          <div v-for="i in 7" :key="i" 
+            class="flex-1 rounded-sm transition-all"
+            :class="i <= 4 ? 'bg-emerald-600/30 h-2' : 'bg-emerald-400 h-' + (i-2)"
+            :style="{ height: (i * 4) + 'px' }"
+          ></div>
+        </div>
+      </div>
+
+      <!-- 今日最差 -->
+      <div 
+        @click="openChart(worstStock)"
+        class="glass rounded-2xl p-6 border-l-4 border-rose-400 cursor-pointer hover:bg-white/5 transition-all"
+      >
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-gray-400 text-sm mb-1">📉 今日最差表現 <span class="text-xs">(點擊查看走勢)</span></p>
+            <p class="text-2xl font-bold">{{ worstStock?.symbol || '--' }}</p>
+            <p class="text-gray-500 text-sm">{{ worstStock?.name || '' }}</p>
+          </div>
+          <div class="text-right">
+            <p class="text-3xl font-bold text-rose-400">
+              {{ worstStock ? formatChange(worstStock.change_pct) : '--' }}
+            </p>
+            <p class="text-gray-400">${{ worstStock?.price?.toFixed(2) || '--' }}</p>
+          </div>
+        </div>
+        <div class="mt-4 flex items-center gap-1">
+          <div v-for="i in 7" :key="i" 
+            class="flex-1 rounded-sm transition-all"
+            :class="i > 3 ? 'bg-rose-600/30 h-2' : 'bg-rose-400'"
+            :style="{ height: ((8 - i) * 4) + 'px' }"
+          ></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 走勢圖彈窗 -->
+    <StockChart 
+      :visible="chartVisible"
+      :symbol="chartSymbol"
+      :stockName="chartStockName"
+      :market="chartMarket"
+      @close="chartVisible = false"
+    />
+
     <!-- 美股表格 -->
     <div v-if="stocks.US?.length" class="glass rounded-2xl overflow-hidden">
       <div class="px-6 py-4 border-b border-white/10">
@@ -103,7 +179,8 @@
             <tr 
               v-for="stock in stocks.US" 
               :key="stock.symbol"
-              class="border-b border-white/5 hover:bg-white/5 transition-colors"
+              @click="openChart(stock)"
+              class="border-b border-white/5 hover:bg-white/5 transition-colors cursor-pointer"
             >
               <td class="px-6 py-4 font-semibold">{{ stock.symbol }}</td>
               <td class="px-6 py-4 text-gray-400">{{ stock.group }}</td>
@@ -146,9 +223,13 @@
             <tr 
               v-for="stock in stocks.TW" 
               :key="stock.symbol"
-              class="border-b border-white/5 hover:bg-white/5 transition-colors"
+              @click="openChart(stock)"
+              class="border-b border-white/5 hover:bg-white/5 transition-colors cursor-pointer"
             >
-              <td class="px-6 py-4 font-semibold">{{ stock.symbol.replace('.TW', '') }}</td>
+              <td class="px-6 py-4">
+                <span class="font-semibold">{{ stock.symbol.replace('.TW', '') }}</span>
+                <span v-if="stock.name" class="text-gray-400 text-sm ml-2">{{ stock.name }}</span>
+              </td>
               <td class="px-6 py-4 text-gray-400">{{ stock.group }}</td>
               <td class="px-6 py-4 text-right font-mono">
                 {{ stock.price ? `$${stock.price.toFixed(2)}` : '--' }}
@@ -181,13 +262,58 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { getMarketStatus, getStocks } from '../api'
+import StockChart from '../components/StockChart.vue'
+import RefreshCountdown from '../components/RefreshCountdown.vue'
+import StockSearch from '../components/StockSearch.vue'
 
 const loading = ref(false)
 const serverTime = ref('')
 const marketStatus = ref({})
 const stocks = ref({ TW: [], US: [] })
+
+// 倒數計時相關
+const refreshInterval = 30  // 刷新間隔（秒）
+const countdown = ref(refreshInterval)
+let countdownTimer = null
+
+// 走勢圖相關
+const chartVisible = ref(false)
+const chartSymbol = ref('')
+const chartStockName = ref('')
+const chartMarket = ref('US')
+
+function openChart(stock) {
+  if (!stock) return
+  chartSymbol.value = stock.symbol.replace('.TW', '')
+  chartStockName.value = stock.name || ''
+  chartMarket.value = stock.symbol.includes('.TW') ? 'TW' : 'US'
+  chartVisible.value = true
+}
+
+// 計算所有股票（合併台股美股）
+const allStocks = computed(() => {
+  const tw = stocks.value.TW || []
+  const us = stocks.value.US || []
+  return [...tw, ...us].filter(s => s.change_pct !== null && s.change_pct !== undefined)
+})
+
+// 今日最佳表現
+const bestStock = computed(() => {
+  if (allStocks.value.length === 0) return null
+  return allStocks.value.reduce((best, current) => 
+    (current.change_pct > best.change_pct) ? current : best
+  )
+})
+
+// 今日最差表現
+const worstStock = computed(() => {
+  if (allStocks.value.length === 0) return null
+  return allStocks.value.reduce((worst, current) => 
+    (current.change_pct < worst.change_pct) ? current : worst
+  )
+})
 
 let refreshTimer = null
 
@@ -228,11 +354,18 @@ function getChangeClassTW(pct) {
 
 onMounted(() => {
   fetchData()
-  // 每 30 秒自動刷新
-  refreshTimer = setInterval(fetchData, 30000)
+  // 啟動倒數計時
+  countdownTimer = setInterval(() => {
+    countdown.value--
+    if (countdown.value <= 0) {
+      countdown.value = refreshInterval
+      fetchData()
+    }
+  }, 1000)
 })
 
 onUnmounted(() => {
   if (refreshTimer) clearInterval(refreshTimer)
+  if (countdownTimer) clearInterval(countdownTimer)
 })
 </script>

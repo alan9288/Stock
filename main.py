@@ -1,26 +1,39 @@
 """
 股票監控系統 - FastAPI 後端
 提供 RESTful API 供 Vue 3 前端使用
+支援多用戶認證
 """
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
 from typing import Optional
-import yfinance as yf
-import json
-import os
 from datetime import datetime, time as dtime
 import pytz
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from services.stock_api import stock_api
+from services.database import init_db, get_db
+from services.models import User, Portfolio, WatchlistItem
+from routers.auth import router as auth_router, get_current_user
+from routers.notifications import router as notifications_router
+from routers.watchlist import router as watchlist_router
+from routers.reports import router as reports_router
 
 # ==========================================
 # 初始化
 # ==========================================
 app = FastAPI(
     title="股票監控 API",
-    description="美股/台股監控系統後端",
-    version="1.0.0"
+    description="美股/台股監控系統後端（支援多用戶）",
+    version="2.0.0"
 )
+
+# 載入路由
+app.include_router(auth_router)
+app.include_router(notifications_router)
+app.include_router(watchlist_router)
+app.include_router(reports_router)
 
 # CORS 設定（允許 Vue 開發伺服器）
 app.add_middleware(
@@ -31,87 +44,50 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-CONFIG_FILE = "config.json"
+# 啟動事件：初始化資料庫和排程器
+@app.on_event("startup")
+async def startup_event():
+    try:
+        await init_db()
+        print("✅ 資料庫連接成功")
+    except Exception as e:
+        print(f"⚠️ 資料庫連接失敗（可能尚未啟動 Docker）: {e}")
+    
+    # 啟動排程器
+    try:
+        from services.scheduler import start_scheduler
+        start_scheduler()
+        print("✅ 排程器已啟動")
+        print("   - 台股報告: 每日 14:00 (台灣時間)")
+        print("   - 美股報告: 每日 05:00 (台灣時間)")
+    except Exception as e:
+        print(f"⚠️ 排程器啟動失敗: {e}")
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    try:
+        from services.scheduler import stop_scheduler
+        stop_scheduler()
+        print("✅ 排程器已停止")
+    except Exception as e:
+        print(f"⚠️ 排程器停止失敗: {e}")
+
+# 時區設定
 TZ_TW = pytz.timezone("Asia/Taipei")
 TZ_US = pytz.timezone("America/New_York")
 
-# ==========================================
-# Pydantic Models
-# ==========================================
-class GroupCreate(BaseModel):
-    market: str  # "TW" or "US"
-    name: str
-    stocks: list[str]
-
-class ConfigUpdate(BaseModel):
-    market: str
-    thresholds: str
 
 # ==========================================
 # 工具函式
 # ==========================================
-def load_config() -> dict:
-    """載入設定檔"""
-    default = {
-        "TW": {"thresholds": "+3 +5 -5 -10", "groups": {}},
-        "US": {"thresholds": "+5 +10 -5 -10", "groups": {}}
-    }
-    if os.path.exists(CONFIG_FILE):
-        try:
-            with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
-                return json.load(f)
-        except Exception:
-            return default
-    return default
-
-def save_config(config: dict):
-    """儲存設定檔"""
-    with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
-        json.dump(config, f, ensure_ascii=False, indent=2)
-
-def get_stock_data(symbol: str) -> dict:
+def get_stock_data(symbol: str, market: str = "US") -> dict:
     """取得單一股票數據"""
-    try:
-        ticker = yf.Ticker(symbol)
-        
-        # 嘗試 fast_info
-        fi = getattr(ticker, "fast_info", None)
-        if fi:
-            price = fi.last_price
-            prev_close = fi.previous_close
-            if price and prev_close and prev_close != 0:
-                change_pct = (price - prev_close) / prev_close
-                return {
-                    "symbol": symbol,
-                    "price": round(float(price), 2),
-                    "prev_close": round(float(prev_close), 2),
-                    "change_pct": round(change_pct * 100, 2),
-                    "status": "success"
-                }
-        
-        # 備用：history
-        hist = ticker.history(period="5d")
-        if hist is not None and len(hist) >= 2:
-            price = float(hist["Close"].iloc[-1])
-            prev_close = float(hist["Close"].iloc[-2])
-            change_pct = (price - prev_close) / prev_close
-            return {
-                "symbol": symbol,
-                "price": round(price, 2),
-                "prev_close": round(prev_close, 2),
-                "change_pct": round(change_pct * 100, 2),
-                "status": "success"
-            }
-    except Exception as e:
-        pass
-    
-    return {
-        "symbol": symbol,
-        "price": None,
-        "prev_close": None,
-        "change_pct": None,
-        "status": "error"
-    }
+    data = stock_api.get_quote(symbol, market)
+    if "group" not in data:
+        data["group"] = None
+    return data
+
 
 def get_market_status(market: str) -> dict:
     """取得市場開盤狀態"""
@@ -148,12 +124,14 @@ def get_market_status(market: str) -> dict:
             "local_time": now_local.strftime("%H:%M")
         }
 
+
 # ==========================================
 # API 路由
 # ==========================================
 @app.get("/")
 async def root():
-    return {"message": "股票監控 API", "version": "1.0.0"}
+    return {"message": "股票監控 API", "version": "2.0.0"}
+
 
 @app.get("/api/market-status")
 async def api_market_status():
@@ -164,81 +142,126 @@ async def api_market_status():
         "server_time": datetime.now(TZ_TW).strftime("%Y-%m-%d %H:%M:%S")
     }
 
-@app.get("/api/config")
-async def api_get_config():
-    """取得設定"""
-    return load_config()
-
-@app.put("/api/config/thresholds")
-async def api_update_thresholds(data: ConfigUpdate):
-    """更新門檻設定"""
-    config = load_config()
-    if data.market not in ["TW", "US"]:
-        raise HTTPException(status_code=400, detail="Invalid market")
-    config[data.market]["thresholds"] = data.thresholds
-    save_config(config)
-    return {"success": True, "message": "門檻已更新"}
-
-@app.post("/api/groups")
-async def api_create_group(data: GroupCreate):
-    """新增投資組合"""
-    config = load_config()
-    if data.market not in ["TW", "US"]:
-        raise HTTPException(status_code=400, detail="Invalid market")
-    if data.name in config[data.market]["groups"]:
-        raise HTTPException(status_code=400, detail="群組名稱已存在")
-    
-    # 處理股票代號
-    stocks = []
-    for s in data.stocks:
-        s = s.strip().upper()
-        if data.market == "TW" and not s.endswith(".TW"):
-            s += ".TW"
-        stocks.append(s)
-    
-    config[data.market]["groups"][data.name] = stocks
-    save_config(config)
-    return {"success": True, "message": f"已新增 {data.name}"}
-
-@app.delete("/api/groups/{market}/{name}")
-async def api_delete_group(market: str, name: str):
-    """刪除投資組合"""
-    config = load_config()
-    if market not in ["TW", "US"]:
-        raise HTTPException(status_code=400, detail="Invalid market")
-    if name not in config[market]["groups"]:
-        raise HTTPException(status_code=404, detail="群組不存在")
-    
-    del config[market]["groups"][name]
-    save_config(config)
-    return {"success": True, "message": f"已刪除 {name}"}
 
 @app.get("/api/stocks")
-async def api_get_stocks():
-    """取得所有監控股票的即時數據"""
-    config = load_config()
+async def api_get_stocks(
+    current_user: Optional[User] = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    取得所有監控股票的即時數據
+    從資料庫讀取登入用戶的觀察清單
+    """
     result = {"TW": [], "US": []}
     
+    if not current_user:
+        return result
+    
+    # 從資料庫讀取用戶的股票
     for market in ["TW", "US"]:
-        groups = config[market].get("groups", {})
-        seen = set()
+        portfolio_result = await db.execute(
+            select(Portfolio).where(
+                Portfolio.user_id == current_user.id,
+                Portfolio.market == market
+            )
+        )
+        portfolio = portfolio_result.scalar_one_or_none()
         
-        for group_name, symbols in groups.items():
-            for symbol in symbols:
-                if symbol in seen:
-                    continue
-                seen.add(symbol)
-                
-                stock_data = get_stock_data(symbol)
-                stock_data["group"] = group_name
-                result[market].append(stock_data)
+        if portfolio:
+            stocks_result = await db.execute(
+                select(WatchlistItem).where(WatchlistItem.portfolio_id == portfolio.id)
+            )
+            items = stocks_result.scalars().all()
+            symbols = [item.symbol for item in items]
+            
+            if symbols:
+                stock_data_list = stock_api.get_quotes_batch(symbols, market)
+                for stock_data in stock_data_list:
+                    stock_data["group"] = portfolio.name
+                    result[market].append(stock_data)
     
     return result
 
+
 @app.get("/api/stocks/{symbol}")
-async def api_get_single_stock(symbol: str):
+async def api_get_single_stock(symbol: str, market: str = "US"):
     """取得單一股票數據"""
-    return get_stock_data(symbol.upper())
+    return get_stock_data(symbol.upper(), market)
+
+
+@app.get("/api/validate-stock/{symbol}")
+async def api_validate_stock(symbol: str, market: str = "US"):
+    """
+    驗證股票代號是否有效
+    回傳 { valid: true/false, symbol: string, message: string }
+    """
+    symbol = symbol.upper()
+    
+    # 加入台股後綴
+    if market == "TW" and not symbol.endswith(".TW"):
+        symbol += ".TW"
+    
+    # 嘗試取得股票資料
+    data = get_stock_data(symbol, market)
+    
+    if data.get("status") == "success" and data.get("price") is not None:
+        return {
+            "valid": True,
+            "symbol": symbol,
+            "price": data.get("price"),
+            "message": f"{symbol} 驗證成功"
+        }
+    else:
+        return {
+            "valid": False,
+            "symbol": symbol,
+            "price": None,
+            "message": f"找不到股票「{symbol}」，請確認代號是否正確"
+        }
+
+
+@app.get("/api/stocks/{symbol}/history")
+async def api_get_stock_history(symbol: str, market: str = "US", period: str = "1d"):
+    """
+    取得股票歷史資料（用於走勢圖）
+    period: 1d (日內), 5d, 1mo, 3mo
+    """
+    import yfinance as yf
+    
+    symbol = symbol.upper()
+    if market == "TW" and not symbol.endswith(".TW"):
+        symbol += ".TW"
+    
+    try:
+        ticker = yf.Ticker(symbol)
+        
+        # 根據時間區間設定 interval
+        if period == "1d":
+            hist = ticker.history(period="1d", interval="5m")
+        elif period == "5d":
+            hist = ticker.history(period="5d", interval="15m")
+        else:
+            hist = ticker.history(period=period, interval="1d")
+        
+        if hist is None or len(hist) == 0:
+            return {"symbol": symbol, "data": [], "error": "無歷史資料"}
+        
+        # 轉換成圖表格式
+        data = []
+        for idx, row in hist.iterrows():
+            data.append({
+                "time": int(idx.timestamp()),
+                "open": round(row["Open"], 2),
+                "high": round(row["High"], 2),
+                "low": round(row["Low"], 2),
+                "close": round(row["Close"], 2),
+            })
+        
+        return {"symbol": symbol, "data": data}
+        
+    except Exception as e:
+        return {"symbol": symbol, "data": [], "error": str(e)}
+
 
 # ==========================================
 # 啟動
