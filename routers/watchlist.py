@@ -6,8 +6,9 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete
-from pydantic import BaseModel
-from typing import Optional, List
+from pydantic import BaseModel, Field, field_validator
+from typing import Optional, List, Literal
+import re
 
 from services.database import get_db
 from services.models import User, Portfolio, WatchlistItem
@@ -17,18 +18,32 @@ router = APIRouter(prefix="/api/watchlist", tags=["股票管理"])
 
 
 # ==========================================
-# Pydantic 模型
+# Pydantic 模型（含驗證）
 # ==========================================
 class StockAdd(BaseModel):
     """新增股票"""
-    symbol: str
-    market: str = "US"  # "TW" or "US"
+    symbol: str = Field(..., min_length=1, max_length=10, description="股票代號")
+    market: Literal["TW", "US"] = Field(default="US", description="市場：TW 或 US")
+    
+    @field_validator('symbol')
+    @classmethod
+    def validate_symbol(cls, v: str, info) -> str:
+        v = v.upper().strip()
+        market = info.data.get('market', 'US')
+        if market == 'US':
+            if not re.match(r'^[A-Z]{1,5}$', v):
+                raise ValueError('美股代號必須是 1-5 個大寫英文字母')
+        else:
+            clean = v.replace('.TW', '')
+            if not re.match(r'^\d{4,6}$', clean):
+                raise ValueError('台股代號必須是 4-6 位數字')
+        return v
 
 
 class StockRemove(BaseModel):
     """移除股票"""
-    symbol: str
-    market: str = "US"
+    symbol: str = Field(..., min_length=1, max_length=10)
+    market: Literal["TW", "US"] = Field(default="US")
 
 
 class WatchlistResponse(BaseModel):

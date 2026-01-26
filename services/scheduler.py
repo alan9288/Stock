@@ -21,6 +21,7 @@ from services.daily_report import (
     generate_market_report_data,
     generate_market_report_html
 )
+from services.alert_monitor import check_all_users_alerts
 
 TZ_TW = pytz.timezone("Asia/Taipei")
 
@@ -168,6 +169,14 @@ async def send_us_reports():
         logger.info(f"美股報告發送完成，共 {sent_count} 封")
 
 
+async def wake_up_for_market(market: str):
+    """
+    開市前喚醒系統
+    這個函數主要用於記錄日誌，實際的電源模式切換由 power_manager 處理
+    """
+    market_name = "台股" if market == "TW" else "美股"
+    logger.info(f"⏰ {market_name}即將開市，系統已喚醒")
+
 def setup_scheduler():
     """設定排程任務"""
     
@@ -189,9 +198,59 @@ def setup_scheduler():
         replace_existing=True
     )
     
+    # 台股開市喚醒: 週一到週五 08:55
+    scheduler.add_job(
+        wake_up_for_market,
+        CronTrigger(hour=8, minute=55, day_of_week='mon-fri', timezone=TZ_TW),
+        id="tw_wakeup",
+        name="台股開市喚醒",
+        args=["TW"],
+        replace_existing=True
+    )
+    
+    # 美股開市喚醒: 週一到週五 21:25 (台灣時間)
+    scheduler.add_job(
+        wake_up_for_market,
+        CronTrigger(hour=21, minute=25, day_of_week='mon-fri', timezone=TZ_TW),
+        id="us_wakeup",
+        name="美股開市喚醒",
+        args=["US"],
+        replace_existing=True
+    )
+    
     logger.info("排程任務已設定:")
     logger.info("  - 台股報告: 每日 14:00 (台灣時間)")
     logger.info("  - 美股報告: 每日 05:00 (台灣時間)")
+    logger.info("  - 台股喚醒: 每日 08:55 (週一至週五)")
+    logger.info("  - 美股喚醒: 每日 21:25 (週一至週五)")
+    
+    # 台股警示監控: 09:00-13:30 每 5 分鐘
+    scheduler.add_job(
+        check_all_users_alerts,
+        CronTrigger(hour='9-13', minute='*/5', day_of_week='mon-fri', timezone=TZ_TW),
+        id="tw_alert_monitor",
+        name="台股警示監控",
+        replace_existing=True
+    )
+    
+    # 美股警示監控: 21:30-04:30 每 5 分鐘 (分兩段)
+    scheduler.add_job(
+        check_all_users_alerts,
+        CronTrigger(hour='21-23', minute='*/5', day_of_week='mon-fri', timezone=TZ_TW),
+        id="us_alert_monitor_night",
+        name="美股警示監控(夜)",
+        replace_existing=True
+    )
+    scheduler.add_job(
+        check_all_users_alerts,
+        CronTrigger(hour='0-4', minute='*/5', day_of_week='tue-sat', timezone=TZ_TW),
+        id="us_alert_monitor_morning",
+        name="美股警示監控(晨)",
+        replace_existing=True
+    )
+    
+    logger.info("  - 台股警示: 09:00-13:30 每5分鐘")
+    logger.info("  - 美股警示: 21:30-04:30 每5分鐘")
 
 
 def start_scheduler():

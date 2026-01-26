@@ -63,6 +63,23 @@ TW_STOCK_NAMES = {
     "3533": "嘉澤",
     "2383": "台光電",
     "2646": "星宇航空",
+    "6770": "力積電",
+    "3661": "世芯-KY",
+    "2618": "長榮航",
+    "2610": "華航",
+    "2105": "正新",
+    "3035": "智原",
+    "5274": "信驊",
+    "6239": "力成",
+    "2449": "京元電子",
+    "2201": "裕隆",
+    "2231": "為升",
+    "6409": "旭隼",
+    "3665": "貿聯-KY",
+    "6531": "愛普",
+    "2059": "川湖",
+    "3706": "神達",
+    "2049": "上銀",
     
     # ETF
     "0050": "元大台灣50",
@@ -83,8 +100,61 @@ TW_STOCK_NAMES = {
     "006203": "元大MSCI台灣",
 }
 
+# 動態快取（從 TWSE 查詢後儲存）
+_dynamic_cache = {}
+
+
+def fetch_tw_stock_name_from_twse(code: str) -> str:
+    """從證交所 API 取得台股中文名稱"""
+    import requests
+    
+    try:
+        # 證交所 API - 取得股票基本資料
+        url = f"https://mis.twse.com.tw/stock/api/getStockInfo.jsp?ex_ch=tse_{code}.tw"
+        resp = requests.get(url, timeout=5)
+        data = resp.json()
+        
+        if data.get("msgArray") and len(data["msgArray"]) > 0:
+            stock_info = data["msgArray"][0]
+            name = stock_info.get("n")  # n = 股票名稱
+            if name:
+                return name
+        
+        # 備用：嘗試上櫃股票
+        url = f"https://mis.twse.com.tw/stock/api/getStockInfo.jsp?ex_ch=otc_{code}.tw"
+        resp = requests.get(url, timeout=5)
+        data = resp.json()
+        
+        if data.get("msgArray") and len(data["msgArray"]) > 0:
+            stock_info = data["msgArray"][0]
+            name = stock_info.get("n")
+            if name:
+                return name
+                
+    except Exception as e:
+        print(f"無法從 TWSE 取得 {code} 的名稱: {e}")
+    
+    return None
+
+
 def get_tw_stock_name(symbol: str) -> str:
-    """取得台股中文名稱"""
+    """取得台股中文名稱（優先使用本地對照表，沒有則查詢 TWSE API）"""
     # 移除 .TW 後綴
     code = symbol.replace(".TW", "").replace(".tw", "")
-    return TW_STOCK_NAMES.get(code)
+    
+    # 1. 先查本地對照表
+    if code in TW_STOCK_NAMES:
+        return TW_STOCK_NAMES[code]
+    
+    # 2. 查動態快取
+    if code in _dynamic_cache:
+        return _dynamic_cache[code]
+    
+    # 3. 從 TWSE API 查詢
+    name = fetch_tw_stock_name_from_twse(code)
+    if name:
+        _dynamic_cache[code] = name
+        return name
+    
+    return None
+

@@ -129,6 +129,8 @@ class StockAPIService:
     @retry(max_attempts=3, delay=1)
     def _get_finnhub_quote(self, symbol: str) -> dict:
         """使用 Finnhub API 取得美股即時報價（含重試）"""
+        from .us_stock_names import get_us_stock_name
+        
         url = f"{self.finnhub_base}/quote"
         params = {"symbol": symbol, "token": self.finnhub_key}
         resp = requests.get(url, params=params, timeout=10)
@@ -141,8 +143,12 @@ class StockAPIService:
             prev_close = data["pc"]
             change_pct = ((price - prev_close) / prev_close) * 100 if prev_close else 0
             
+            # 取得股票名稱
+            stock_name = get_us_stock_name(symbol)
+            
             return {
                 "symbol": symbol,
+                "name": stock_name,
                 "price": round(price, 2),
                 "prev_close": round(prev_close, 2),
                 "change_pct": round(change_pct, 2),

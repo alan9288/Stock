@@ -154,3 +154,44 @@ async def logout():
     登出（前端清除 Token 即可）
     """
     return {"message": "已登出"}
+
+
+# ==========================================
+# 密碼修改
+# ==========================================
+from pydantic import BaseModel as PydanticBaseModel
+
+class PasswordChange(PydanticBaseModel):
+    """密碼修改 Schema"""
+    current_password: str
+    new_password: str
+
+
+@router.put("/password")
+async def change_password(
+    data: PasswordChange,
+    current_user: User = Depends(get_current_user_required),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    修改密碼
+    """
+    # 驗證現有密碼
+    if not verify_password(data.current_password, current_user.password_hash):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="現有密碼錯誤"
+        )
+    
+    # 驗證新密碼長度
+    if len(data.new_password) < 6:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="新密碼至少需要 6 個字元"
+        )
+    
+    # 更新密碼
+    current_user.password_hash = hash_password(data.new_password)
+    await db.commit()
+    
+    return {"message": "密碼已更新成功"}

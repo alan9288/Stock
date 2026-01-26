@@ -15,10 +15,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from services.stock_api import stock_api
 from services.database import init_db, get_db
 from services.models import User, Portfolio, WatchlistItem
+from services.power_manager import get_power_status, get_polling_interval
 from routers.auth import router as auth_router, get_current_user
 from routers.notifications import router as notifications_router
 from routers.watchlist import router as watchlist_router
 from routers.reports import router as reports_router
+from routers.alerts import router as alerts_router
+from routers.holdings import router as holdings_router
 
 # ==========================================
 # 初始化
@@ -34,6 +37,8 @@ app.include_router(auth_router)
 app.include_router(notifications_router)
 app.include_router(watchlist_router)
 app.include_router(reports_router)
+app.include_router(alerts_router)
+app.include_router(holdings_router)
 
 # CORS 設定（允許 Vue 開發伺服器和生產環境）
 app.add_middleware(
@@ -142,11 +147,20 @@ async def root():
 @app.get("/api/market-status")
 async def api_market_status():
     """取得台股/美股市場狀態"""
+    power_status = get_power_status()
     return {
         "TW": get_market_status("TW"),
         "US": get_market_status("US"),
-        "server_time": datetime.now(TZ_TW).strftime("%Y-%m-%d %H:%M:%S")
+        "server_time": datetime.now(TZ_TW).strftime("%Y-%m-%d %H:%M:%S"),
+        "power_mode": power_status["mode"],
+        "polling_interval": power_status["polling_interval"]
     }
+
+
+@app.get("/api/power-mode")
+async def api_power_mode():
+    """取得電源模式狀態"""
+    return get_power_status()
 
 
 @app.get("/api/stocks")
@@ -158,10 +172,31 @@ async def api_get_stocks(
     取得所有監控股票的即時數據
     從資料庫讀取登入用戶的觀察清單
     """
+    from sqlalchemy.orm import selectinload
+    from services.models import Holding
+    
     result = {"TW": [], "US": []}
     
     if not current_user:
         return result
+    
+    # 先取得用戶的所有持股平均成本
+    holdings_result = await db.execute(
+        select(Holding)
+        .options(selectinload(Holding.transactions))
+        .where(Holding.user_id == current_user.id)
+    )
+    holdings = holdings_result.scalars().all()
+    
+    # 建立 symbol -> avg_cost 的對照表
+    avg_cost_map = {}
+    for holding in holdings:
+        txns = holding.transactions
+        if txns:
+            total_quantity = sum(float(t.quantity) for t in txns)
+            total_cost = sum(float(t.quantity) * float(t.price) for t in txns)
+            avg_cost = total_cost / total_quantity if total_quantity > 0 else 0
+            avg_cost_map[holding.symbol] = round(avg_cost, 2)
     
     # 從資料庫讀取用戶的股票
     for market in ["TW", "US"]:
@@ -184,6 +219,8 @@ async def api_get_stocks(
                 stock_data_list = stock_api.get_quotes_batch(symbols, market)
                 for stock_data in stock_data_list:
                     stock_data["group"] = portfolio.name
+                    # 加入平均成本
+                    stock_data["avg_cost"] = avg_cost_map.get(stock_data["symbol"])
                     result[market].append(stock_data)
     
     return result

@@ -13,6 +13,12 @@ const routes = [
         meta: { requiresAuth: true }
     },
     {
+        path: '/holdings',
+        name: 'holdings',
+        component: () => import('./views/Holdings.vue'),
+        meta: { requiresAuth: true }
+    },
+    {
         path: '/settings',
         name: 'settings',
         component: () => import('./views/Settings.vue'),

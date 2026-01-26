@@ -3,7 +3,7 @@
 使用 SQLAlchemy ORM
 """
 
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Text
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Text, Numeric
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from .database import Base
@@ -67,3 +67,56 @@ class WatchlistItem(Base):
     
     # 關聯
     portfolio = relationship("Portfolio", back_populates="stocks")
+
+
+class AlertHistory(Base):
+    """警示歷史記錄"""
+    __tablename__ = "alert_history"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"))
+    symbol = Column(String(20), nullable=False)
+    stock_name = Column(String(100))
+    threshold_hit = Column(String(10))  # 如 "+5" 或 "-10"
+    change_pct = Column(String(20))     # 實際漲跌幅
+    price = Column(String(20))          # 當時價格
+    notified_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    # 關聯
+    user = relationship("User")
+
+
+class Holding(Base):
+    """持股記錄"""
+    __tablename__ = "holdings"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"))
+    symbol = Column(String(20), nullable=False)
+    market = Column(String(10), nullable=False)  # TW 或 US
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    # 關聯
+    user = relationship("User")
+    transactions = relationship("HoldingTransaction", back_populates="holding", cascade="all, delete-orphan")
+    
+    # 複合唯一約束
+    __table_args__ = (
+        {'extend_existing': True},
+    )
+
+
+class HoldingTransaction(Base):
+    """持股交易記錄（買入/補倉）"""
+    __tablename__ = "holding_transactions"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    holding_id = Column(Integer, ForeignKey("holdings.id", ondelete="CASCADE"))
+    quantity = Column(Numeric(12, 5), nullable=False)  # 股數（支援5位小數）
+    price = Column(String(20), nullable=False)        # 買入價格
+    transaction_date = Column(DateTime(timezone=True))  # 交易日期
+    note = Column(Text)                               # 備註
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    # 關聯
+    holding = relationship("Holding", back_populates="transactions")

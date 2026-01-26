@@ -7,8 +7,13 @@
         <p class="text-gray-400 mt-1">{{ serverTime }}</p>
       </div>
       <div class="flex items-center gap-4">
+        <!-- 電源模式指示器 -->
+        <span class="px-3 py-1 rounded-full text-sm bg-white/10">
+          {{ powerModeDisplay }}
+        </span>
+        
         <!-- 自動刷新倒數 -->
-        <RefreshCountdown :seconds="countdown" :total="refreshInterval" />
+        <RefreshCountdown :seconds="countdown" :total="pollingInterval || 30" />
         
         <button 
           @click="fetchData" 
@@ -29,8 +34,22 @@
 
     <!-- 市場狀態卡片 -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <!-- 骨架屏 -->
+      <template v-if="loading && !stocks.TW?.length && !stocks.US?.length">
+        <div v-for="i in 3" :key="i" class="glass rounded-2xl p-6 animate-pulse">
+          <div class="flex items-center gap-3 mb-4">
+            <div class="w-10 h-10 bg-white/10 rounded-full"></div>
+            <div class="space-y-2">
+              <div class="h-4 w-20 bg-white/10 rounded"></div>
+              <div class="h-3 w-16 bg-white/10 rounded"></div>
+            </div>
+          </div>
+          <div class="h-4 w-24 bg-white/10 rounded"></div>
+        </div>
+      </template>
+
       <!-- 台股 -->
-      <div class="glass rounded-2xl p-6">
+      <div v-else class="glass rounded-2xl p-6">
         <div class="flex items-center gap-3 mb-4">
           <span class="text-3xl">🇹🇼</span>
           <div>
@@ -40,8 +59,8 @@
         </div>
         <div class="flex items-center gap-2">
           <span 
-            class="w-3 h-3 rounded-full animate-pulse"
-            :class="marketStatus.TW?.is_open ? 'bg-emerald-400' : 'bg-rose-400'"
+            class="w-3 h-3 rounded-full"
+            :class="marketStatus.TW?.is_open ? 'bg-emerald-400 animate-pulse' : 'bg-rose-400'"
           ></span>
           <span :class="marketStatus.TW?.is_open ? 'text-emerald-400' : 'text-rose-400'">
             {{ marketStatus.TW?.status || '載入中...' }}
@@ -50,7 +69,7 @@
       </div>
 
       <!-- 美股 -->
-      <div class="glass rounded-2xl p-6">
+      <div v-if="!loading || stocks.TW?.length || stocks.US?.length" class="glass rounded-2xl p-6">
         <div class="flex items-center gap-3 mb-4">
           <span class="text-3xl">🇺🇸</span>
           <div>
@@ -60,8 +79,8 @@
         </div>
         <div class="flex items-center gap-2">
           <span 
-            class="w-3 h-3 rounded-full animate-pulse"
-            :class="marketStatus.US?.is_open ? 'bg-emerald-400' : 'bg-rose-400'"
+            class="w-3 h-3 rounded-full"
+            :class="marketStatus.US?.is_open ? 'bg-emerald-400 animate-pulse' : 'bg-rose-400'"
           ></span>
           <span :class="marketStatus.US?.is_open ? 'text-emerald-400' : 'text-rose-400'">
             {{ marketStatus.US?.status || '載入中...' }}
@@ -70,7 +89,7 @@
       </div>
 
       <!-- 監控統計 -->
-      <div class="glass rounded-2xl p-6">
+      <div v-if="!loading || stocks.TW?.length || stocks.US?.length" class="glass rounded-2xl p-6">
         <div class="flex items-center gap-3 mb-4">
           <span class="text-3xl">📈</span>
           <div>
@@ -168,22 +187,36 @@
         <table class="w-full">
           <thead>
             <tr class="text-gray-400 text-sm border-b border-white/10">
-              <th class="px-6 py-4 text-left">代號</th>
-              <th class="px-6 py-4 text-left">群組</th>
-              <th class="px-6 py-4 text-right">現價</th>
+              <th @click="toggleSortUS('symbol')" class="px-6 py-4 text-left cursor-pointer hover:text-white transition-colors">
+                代號{{ getSortArrow('symbol', sortKeyUS, sortOrderUS) }}
+              </th>
+              <th @click="toggleSortUS('name')" class="px-6 py-4 text-left cursor-pointer hover:text-white transition-colors">
+                名稱{{ getSortArrow('name', sortKeyUS, sortOrderUS) }}
+              </th>
+              <th @click="toggleSortUS('avg_cost')" class="px-6 py-4 text-right cursor-pointer hover:text-orange-400 transition-colors text-orange-400">
+                平均成本{{ getSortArrow('avg_cost', sortKeyUS, sortOrderUS) }}
+              </th>
+              <th @click="toggleSortUS('price')" class="px-6 py-4 text-right cursor-pointer hover:text-white transition-colors">
+                現價{{ getSortArrow('price', sortKeyUS, sortOrderUS) }}
+              </th>
               <th class="px-6 py-4 text-right">昨收</th>
-              <th class="px-6 py-4 text-right">漲跌幅</th>
+              <th @click="toggleSortUS('change_pct')" class="px-6 py-4 text-right cursor-pointer hover:text-white transition-colors">
+                漲跌幅{{ getSortArrow('change_pct', sortKeyUS, sortOrderUS) }}
+              </th>
             </tr>
           </thead>
           <tbody>
             <tr 
-              v-for="stock in stocks.US" 
+              v-for="stock in sortedUSStocks" 
               :key="stock.symbol"
               @click="openChart(stock)"
               class="border-b border-white/5 hover:bg-white/5 transition-colors cursor-pointer"
             >
               <td class="px-6 py-4 font-semibold">{{ stock.symbol }}</td>
-              <td class="px-6 py-4 text-gray-400">{{ stock.group }}</td>
+              <td class="px-6 py-4 text-gray-300">{{ stock.name || '--' }}</td>
+              <td class="px-6 py-4 text-right font-mono text-orange-400">
+                {{ stock.avg_cost ? `$${stock.avg_cost.toFixed(2)}` : '--' }}
+              </td>
               <td class="px-6 py-4 text-right font-mono">
                 {{ stock.price ? `$${stock.price.toFixed(2)}` : '--' }}
               </td>
@@ -212,25 +245,36 @@
         <table class="w-full">
           <thead>
             <tr class="text-gray-400 text-sm border-b border-white/10">
-              <th class="px-6 py-4 text-left">代號</th>
-              <th class="px-6 py-4 text-left">群組</th>
-              <th class="px-6 py-4 text-right">現價</th>
+              <th @click="toggleSortTW('symbol')" class="px-6 py-4 text-left cursor-pointer hover:text-white transition-colors">
+                代號{{ getSortArrow('symbol', sortKeyTW, sortOrderTW) }}
+              </th>
+              <th @click="toggleSortTW('name')" class="px-6 py-4 text-left cursor-pointer hover:text-white transition-colors">
+                名稱{{ getSortArrow('name', sortKeyTW, sortOrderTW) }}
+              </th>
+              <th @click="toggleSortTW('avg_cost')" class="px-6 py-4 text-right cursor-pointer hover:text-orange-400 transition-colors text-orange-400">
+                平均成本{{ getSortArrow('avg_cost', sortKeyTW, sortOrderTW) }}
+              </th>
+              <th @click="toggleSortTW('price')" class="px-6 py-4 text-right cursor-pointer hover:text-white transition-colors">
+                現價{{ getSortArrow('price', sortKeyTW, sortOrderTW) }}
+              </th>
               <th class="px-6 py-4 text-right">昨收</th>
-              <th class="px-6 py-4 text-right">漲跌幅</th>
+              <th @click="toggleSortTW('change_pct')" class="px-6 py-4 text-right cursor-pointer hover:text-white transition-colors">
+                漲跌幅{{ getSortArrow('change_pct', sortKeyTW, sortOrderTW) }}
+              </th>
             </tr>
           </thead>
           <tbody>
             <tr 
-              v-for="stock in stocks.TW" 
+              v-for="stock in sortedTWStocks" 
               :key="stock.symbol"
               @click="openChart(stock)"
               class="border-b border-white/5 hover:bg-white/5 transition-colors cursor-pointer"
             >
-              <td class="px-6 py-4">
-                <span class="font-semibold">{{ stock.symbol.replace('.TW', '') }}</span>
-                <span v-if="stock.name" class="text-gray-400 text-sm ml-2">{{ stock.name }}</span>
+              <td class="px-6 py-4 font-semibold">{{ stock.symbol.replace('.TW', '') }}</td>
+              <td class="px-6 py-4 text-gray-300">{{ stock.name || '--' }}</td>
+              <td class="px-6 py-4 text-right font-mono text-orange-400">
+                {{ stock.avg_cost ? `NT$${stock.avg_cost.toFixed(2)}` : '--' }}
               </td>
-              <td class="px-6 py-4 text-gray-400">{{ stock.group }}</td>
               <td class="px-6 py-4 text-right font-mono">
                 {{ stock.price ? `$${stock.price.toFixed(2)}` : '--' }}
               </td>
@@ -273,10 +317,88 @@ const serverTime = ref('')
 const marketStatus = ref({})
 const stocks = ref({ TW: [], US: [] })
 
+// 電源模式相關
+const powerMode = ref('normal')  // normal, low, sleep
+const pollingInterval = ref(30)  // 從 API 取得的輪詢間隔
+
 // 倒數計時相關
-const refreshInterval = 30  // 刷新間隔（秒）
-const countdown = ref(refreshInterval)
+const countdown = ref(30)
 let countdownTimer = null
+
+// 電源模式圖示
+const powerModeDisplay = computed(() => {
+  switch (powerMode.value) {
+    case 'normal': return '🟢 正常模式'
+    case 'low': return '🟡 省電模式'
+    case 'sleep': return '🔴 休眠模式'
+    default: return '❓ 未知'
+  }
+})
+
+// 排序相關
+const sortKeyUS = ref('')
+const sortOrderUS = ref('asc')  // 'asc' 或 'desc'
+const sortKeyTW = ref('')
+const sortOrderTW = ref('asc')
+
+// 排序函數
+function sortStocks(stocks, key, order) {
+  if (!key) return stocks
+  
+  return [...stocks].sort((a, b) => {
+    let valA = a[key]
+    let valB = b[key]
+    
+    // 處理 null/undefined
+    if (valA == null) valA = order === 'asc' ? Infinity : -Infinity
+    if (valB == null) valB = order === 'asc' ? Infinity : -Infinity
+    
+    // 字串比較
+    if (typeof valA === 'string') {
+      valA = valA.toLowerCase()
+      valB = valB.toLowerCase()
+    }
+    
+    if (valA < valB) return order === 'asc' ? -1 : 1
+    if (valA > valB) return order === 'asc' ? 1 : -1
+    return 0
+  })
+}
+
+// 排序後的美股
+const sortedUSStocks = computed(() => {
+  return sortStocks(stocks.value.US || [], sortKeyUS.value, sortOrderUS.value)
+})
+
+// 排序後的台股
+const sortedTWStocks = computed(() => {
+  return sortStocks(stocks.value.TW || [], sortKeyTW.value, sortOrderTW.value)
+})
+
+// 切換排序
+function toggleSortUS(key) {
+  if (sortKeyUS.value === key) {
+    sortOrderUS.value = sortOrderUS.value === 'asc' ? 'desc' : 'asc'
+  } else {
+    sortKeyUS.value = key
+    sortOrderUS.value = 'asc'
+  }
+}
+
+function toggleSortTW(key) {
+  if (sortKeyTW.value === key) {
+    sortOrderTW.value = sortOrderTW.value === 'asc' ? 'desc' : 'asc'
+  } else {
+    sortKeyTW.value = key
+    sortOrderTW.value = 'asc'
+  }
+}
+
+// 排序箭頭
+function getSortArrow(currentKey, sortKey, sortOrder) {
+  if (currentKey !== sortKey) return ''
+  return sortOrder === 'asc' ? ' ▲' : ' ▼'
+}
 
 // 走勢圖相關
 const chartVisible = ref(false)
@@ -327,6 +449,17 @@ async function fetchData() {
     marketStatus.value = status
     serverTime.value = status.server_time
     stocks.value = stockData
+    
+    // 更新電源模式
+    if (status.power_mode) {
+      powerMode.value = status.power_mode
+      pollingInterval.value = status.polling_interval || 30
+      
+      // 根據模式調整倒數計時
+      if (status.polling_interval > 0) {
+        countdown.value = status.polling_interval
+      }
+    }
   } catch (error) {
     console.error('載入失敗:', error)
   } finally {
@@ -354,11 +487,16 @@ function getChangeClassTW(pct) {
 
 onMounted(() => {
   fetchData()
-  // 啟動倒數計時
+  // 啟動倒數計時（動態間隔）
   countdownTimer = setInterval(() => {
+    // 休眠模式不自動刷新
+    if (powerMode.value === 'sleep' || pollingInterval.value === 0) {
+      return
+    }
+    
     countdown.value--
     if (countdown.value <= 0) {
-      countdown.value = refreshInterval
+      countdown.value = pollingInterval.value
       fetchData()
     }
   }, 1000)
