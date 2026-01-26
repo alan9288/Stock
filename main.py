@@ -290,10 +290,20 @@ async def api_get_stock_history(symbol: str, market: str = "US", period: str = "
             return {"symbol": symbol, "data": [], "error": "無歷史資料"}
         
         # 轉換成圖表格式
+        # lightweight-charts 需要 UTC 時間戳，但要轉換為當地時區顯示
         data = []
         for idx, row in hist.iterrows():
+            # 取得 UTC 時間戳
+            timestamp = int(idx.timestamp())
+            
+            # 時區偏移量，讓圖表顯示交易所當地時間
+            if market == "TW":
+                timestamp += 8 * 3600  # 台股: UTC+8
+            else:
+                timestamp -= 5 * 3600  # 美股: UTC-5 (紐約時間)
+            
             data.append({
-                "time": int(idx.timestamp()),
+                "time": timestamp,
                 "open": round(row["Open"], 2),
                 "high": round(row["High"], 2),
                 "low": round(row["Low"], 2),
