@@ -16,75 +16,57 @@
     </div>
 
     <!-- 總覽卡片 -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
       <!-- 🇺🇸 美股 -->
-      <div class="glass rounded-2xl p-6">
-        <div class="flex items-center gap-2 mb-3">
-          <span class="text-xl">🇺🇸</span>
-          <span class="text-gray-400">美股投資</span>
-        </div>
-        <div class="flex justify-between items-end">
-          <div>
-            <p class="text-gray-500 text-xs">投入成本</p>
-            <p class="text-2xl font-bold">${{ usTotalCost.toLocaleString() }}</p>
+      <div class="glass rounded-xl p-4">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="text-lg">🇺🇸</span>
+            <span class="text-gray-400 text-sm">美股投資</span>
           </div>
-          <div class="text-right">
-            <p class="text-gray-500 text-xs">報酬率</p>
-            <p class="text-xl font-bold" :class="usReturnPct >= 0 ? 'text-green-400' : 'text-red-400'">
-              {{ usReturnPct >= 0 ? '+' : '' }}{{ usReturnPct.toFixed(2) }}%
-            </p>
-          </div>
+          <span class="text-lg font-bold" :class="usReturnPct >= 0 ? 'text-green-400' : 'text-red-400'">
+            {{ usReturnPct >= 0 ? '+' : '' }}{{ usReturnPct.toFixed(2) }}%
+          </span>
         </div>
+        <p class="text-xl font-bold mt-1">${{ usTotalCost.toLocaleString() }}</p>
       </div>
       
       <!-- 🇹🇼 台股 -->
-      <div class="glass rounded-2xl p-6">
-        <div class="flex items-center gap-2 mb-3">
-          <span class="text-xl">🇹🇼</span>
-          <span class="text-gray-400">台股投資</span>
-        </div>
-        <div class="flex justify-between items-end">
-          <div>
-            <p class="text-gray-500 text-xs">投入成本</p>
-            <p class="text-2xl font-bold">NT${{ twTotalCost.toLocaleString() }}</p>
+      <div class="glass rounded-xl p-4">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="text-lg">🇹🇼</span>
+            <span class="text-gray-400 text-sm">台股投資</span>
           </div>
-          <div class="text-right">
-            <p class="text-gray-500 text-xs">報酬率</p>
-            <p class="text-xl font-bold" :class="twReturnPct >= 0 ? 'text-red-400' : 'text-green-400'">
-              {{ twReturnPct >= 0 ? '+' : '' }}{{ twReturnPct.toFixed(2) }}%
-            </p>
-          </div>
+          <span class="text-lg font-bold" :class="twReturnPct >= 0 ? 'text-green-400' : 'text-red-400'">
+            {{ twReturnPct >= 0 ? '+' : '' }}{{ twReturnPct.toFixed(2) }}%
+          </span>
         </div>
+        <p class="text-xl font-bold mt-1">NT${{ twTotalCost.toLocaleString() }}</p>
       </div>
       
       <!-- 📊 總計 -->
-      <div class="glass rounded-2xl p-6 bg-gradient-to-br from-purple-500/20 to-cyan-500/20 border border-cyan-500/30">
-        <div class="flex items-center gap-2 mb-3">
-          <span class="text-xl">📊</span>
-          <span class="text-cyan-400 font-semibold">投資總覽</span>
+      <div class="glass rounded-xl p-4 bg-gradient-to-br from-purple-500/20 to-cyan-500/20 border border-cyan-500/30">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="text-lg">📊</span>
+            <span class="text-cyan-400 font-semibold text-sm">投資總覽</span>
+          </div>
+          <span class="text-lg font-bold" :class="totalReturnPct >= 0 ? 'text-cyan-400' : 'text-red-400'">
+            {{ totalReturnPct >= 0 ? '+' : '' }}{{ totalReturnPct.toFixed(2) }}%
+          </span>
         </div>
-        <div class="space-y-2">
-          <div class="flex justify-between">
-            <span class="text-gray-400 text-sm">美股</span>
-            <span class="font-mono">${{ usTotalCost.toLocaleString() }}</span>
-          </div>
-          <div class="flex justify-between">
-            <span class="text-gray-400 text-sm">台股</span>
-            <span class="font-mono">NT${{ twTotalCost.toLocaleString() }}</span>
-          </div>
-          <div class="border-t border-white/10 pt-2 mt-2 flex justify-between">
-            <span class="text-gray-400 text-sm">總報酬率</span>
-            <span class="font-bold" :class="totalReturnPct >= 0 ? 'text-cyan-400' : 'text-red-400'">
-              {{ totalReturnPct >= 0 ? '+' : '' }}{{ totalReturnPct.toFixed(2) }}%
-            </span>
-          </div>
+        <div class="flex gap-4 mt-1 text-sm">
+          <span class="font-mono">${{ usTotalCost.toLocaleString() }}</span>
+          <span class="text-gray-500">+</span>
+          <span class="font-mono">NT${{ twTotalCost.toLocaleString() }}</span>
         </div>
       </div>
     </div>
 
     <!-- 🇺🇸 美股持股 -->
     <div class="glass rounded-2xl overflow-hidden" v-if="usHoldings.length">
-      <div class="px-6 py-4 border-b border-white/10 flex items-center gap-2">
+      <div class="px-6 py-3 border-b border-white/10 flex items-center gap-2">
         <span class="text-xl">🇺🇸</span>
         <h3 class="font-semibold">美股持股</h3>
         <span class="text-gray-400 text-sm">({{ usHoldings.length }} 檔)</span>
@@ -93,17 +75,13 @@
         <table class="w-full">
           <thead>
             <tr class="text-gray-400 text-sm border-b border-white/10">
-              <th @click="toggleSort('symbol', 'US')" class="px-6 py-4 text-left cursor-pointer hover:text-white transition-colors">代號 {{ getSortArrow('symbol', 'US') }}</th>
-              <th class="px-6 py-4 text-left">名稱</th>
-              <th @click="toggleSort('total_quantity', 'US')" class="px-6 py-4 text-right cursor-pointer hover:text-white transition-colors">股數 {{ getSortArrow('total_quantity', 'US') }}</th>
-              <th @click="toggleSort('avg_cost', 'US')" class="px-6 py-4 text-right cursor-pointer hover:text-white transition-colors">平均成本 {{ getSortArrow('avg_cost', 'US') }}</th>
-              <th @click="toggleSort('current_price', 'US')" class="px-6 py-4 text-right cursor-pointer hover:text-white transition-colors">現價 {{ getSortArrow('current_price', 'US') }}</th>
-              <th @click="toggleSort('return_pct', 'US')" class="px-6 py-4 text-right cursor-pointer hover:text-white transition-colors">報酬率 {{ getSortArrow('return_pct', 'US') }}</th>
-              <th class="px-6 py-4 text-center">📊 買入分數</th>
-              <th class="px-6 py-4 text-right">💰 建議買價</th>
-              <th class="px-6 py-4 text-right">💵 建議加碼</th>
-              <th class="px-6 py-4 text-center">📅 財報日期</th>
-              <th class="px-6 py-4 text-center">操作</th>
+              <th @click="toggleSort('symbol', 'US')" class="px-4 py-3 text-left cursor-pointer hover:text-white transition-colors">股票 {{ getSortArrow('symbol', 'US') }}</th>
+              <th @click="toggleSort('total_quantity', 'US')" class="px-4 py-3 text-right cursor-pointer hover:text-white transition-colors">股數 {{ getSortArrow('total_quantity', 'US') }}</th>
+              <th @click="toggleSort('avg_cost', 'US')" class="px-4 py-3 text-right cursor-pointer hover:text-white transition-colors">成本 {{ getSortArrow('avg_cost', 'US') }}</th>
+              <th @click="toggleSort('current_price', 'US')" class="px-4 py-3 text-right cursor-pointer hover:text-white transition-colors">現價 {{ getSortArrow('current_price', 'US') }}</th>
+              <th @click="toggleSort('return_pct', 'US')" class="px-4 py-3 text-right cursor-pointer hover:text-white transition-colors">報酬 {{ getSortArrow('return_pct', 'US') }}</th>
+              <th class="px-4 py-3 text-left">智慧分析</th>
+              <th class="px-4 py-3 text-center">操作</th>
             </tr>
           </thead>
           <tbody>
@@ -112,53 +90,47 @@
               :key="holding.id"
               class="border-b border-white/5 hover:bg-white/5 transition-colors"
             >
-              <td class="px-6 py-4 font-semibold">{{ holding.symbol }}</td>
-              <td class="px-6 py-4 text-gray-300">{{ holding.name || '--' }}</td>
-              <td class="px-6 py-4 text-right font-mono">{{ formatQuantity(holding.total_quantity) }}</td>
-              <td class="px-6 py-4 text-right font-mono">{{ formatCurrency(holding.avg_cost, 'US') }}</td>
-              <td class="px-6 py-4 text-right font-mono">
+              <!-- 股票：代號+名稱合併 -->
+              <td class="px-4 py-3">
+                <div class="font-semibold">{{ holding.symbol }}</div>
+                <div class="text-xs text-gray-500">{{ holding.name || '--' }}</div>
+              </td>
+              <td class="px-4 py-3 text-right font-mono">{{ formatQuantity(holding.total_quantity) }}</td>
+              <td class="px-4 py-3 text-right font-mono text-sm">{{ formatCurrency(holding.avg_cost, 'US') }}</td>
+              <td class="px-4 py-3 text-right font-mono text-sm">
                 {{ holding.current_price ? formatCurrency(holding.current_price, 'US') : '--' }}
               </td>
-              <td class="px-6 py-4 text-right font-semibold">
+              <td class="px-4 py-3 text-right font-semibold">
                 <span :class="holding.return_pct >= 0 ? 'text-green-400' : 'text-red-400'">
                   {{ holding.return_pct >= 0 ? '+' : '' }}{{ holding.return_pct?.toFixed(2) }}%
                 </span>
               </td>
-              <!-- 買入分數 -->
-              <td class="px-6 py-4 text-center">
-                <span v-if="holding.buy_signal" class="px-2 py-1 rounded-lg text-sm font-semibold"
-                      :class="getBuyScoreClass(holding.buy_signal.buy_score)">
-                  {{ holding.buy_signal.buy_score }}分
-                </span>
-                <span v-else class="text-gray-500">--</span>
-              </td>
-              <!-- 建議買價 -->
-              <td class="px-6 py-4 text-right">
-                <div v-if="holding.buy_signal">
-                  <span class="text-sm">{{ holding.buy_signal.buy_status }}</span>
+              <!-- 智慧分析：合併多個欄位 -->
+              <td class="px-4 py-3">
+                <div v-if="holding.buy_signal" class="space-y-1">
+                  <div class="flex items-center gap-2">
+                    <span class="px-2 py-0.5 rounded text-xs font-semibold"
+                          :class="getBuyScoreClass(holding.buy_signal.buy_score)">
+                      {{ holding.buy_signal.buy_score }}分
+                    </span>
+                    <span v-if="holding.buy_signal.suggested_amount > 0" class="text-cyan-400 text-xs">
+                      +{{ formatCurrency(holding.buy_signal.suggested_amount, 'US') }}
+                    </span>
+                  </div>
+                  <div class="text-xs text-gray-500">
+                    {{ holding.buy_signal.buy_status }}
+                    <span v-if="holding.buy_signal.earnings_date" :class="getEarningsDateClass(holding.buy_signal.earnings_date)">
+                      · {{ formatEarningsDate(holding.buy_signal.earnings_date) }}
+                    </span>
+                  </div>
                 </div>
-                <span v-else class="text-gray-500">--</span>
+                <span v-else class="text-gray-500 text-sm">--</span>
               </td>
-              <!-- 建議加碼 -->
-              <td class="px-6 py-4 text-right font-mono">
-                <span v-if="holding.buy_signal && holding.buy_signal.suggested_amount > 0" class="text-cyan-400">
-                  {{ formatCurrency(holding.buy_signal.suggested_amount, 'US') }}
-                </span>
-                <span v-else class="text-gray-500">--</span>
-              </td>
-              <!-- 財報日期 -->
-              <td class="px-6 py-4 text-center">
-                <span v-if="holding.buy_signal && holding.buy_signal.earnings_date" 
-                      :class="getEarningsDateClass(holding.buy_signal.earnings_date)">
-                  {{ formatEarningsDate(holding.buy_signal.earnings_date) }}
-                </span>
-                <span v-else class="text-gray-500">--</span>
-              </td>
-              <td class="px-6 py-4 text-center">
-                <div class="flex items-center justify-center gap-2">
-                  <button @click="openAddTransaction(holding)" class="p-2 hover:bg-white/10 rounded-lg" title="補倉">➕</button>
-                  <button @click="viewTransactions(holding)" class="p-2 hover:bg-white/10 rounded-lg" title="查看記錄">📋</button>
-                  <button @click="confirmDelete(holding)" class="p-2 hover:bg-red-500/20 rounded-lg text-red-400" title="刪除">🗑️</button>
+              <td class="px-4 py-3 text-center">
+                <div class="flex items-center justify-center gap-1">
+                  <button @click="openAddTransaction(holding)" class="p-1.5 hover:bg-white/10 rounded-lg" title="補倉">➕</button>
+                  <button @click="viewTransactions(holding)" class="p-1.5 hover:bg-white/10 rounded-lg" title="查看記錄">📋</button>
+                  <button @click="confirmDelete(holding)" class="p-1.5 hover:bg-red-500/20 rounded-lg text-red-400" title="刪除">🗑️</button>
                 </div>
               </td>
             </tr>
@@ -169,7 +141,7 @@
 
     <!-- 🇹🇼 台股持股 -->
     <div class="glass rounded-2xl overflow-hidden" v-if="twHoldings.length">
-      <div class="px-6 py-4 border-b border-white/10 flex items-center gap-2">
+      <div class="px-6 py-3 border-b border-white/10 flex items-center gap-2">
         <span class="text-xl">🇹🇼</span>
         <h3 class="font-semibold">台股持股</h3>
         <span class="text-gray-400 text-sm">({{ twHoldings.length }} 檔)</span>
@@ -178,17 +150,13 @@
         <table class="w-full">
           <thead>
             <tr class="text-gray-400 text-sm border-b border-white/10">
-              <th @click="toggleSort('symbol', 'TW')" class="px-6 py-4 text-left cursor-pointer hover:text-white transition-colors">代號 {{ getSortArrow('symbol', 'TW') }}</th>
-              <th class="px-6 py-4 text-left">名稱</th>
-              <th @click="toggleSort('total_quantity', 'TW')" class="px-6 py-4 text-right cursor-pointer hover:text-white transition-colors">股數 {{ getSortArrow('total_quantity', 'TW') }}</th>
-              <th @click="toggleSort('avg_cost', 'TW')" class="px-6 py-4 text-right cursor-pointer hover:text-white transition-colors">平均成本 {{ getSortArrow('avg_cost', 'TW') }}</th>
-              <th @click="toggleSort('current_price', 'TW')" class="px-6 py-4 text-right cursor-pointer hover:text-white transition-colors">現價 {{ getSortArrow('current_price', 'TW') }}</th>
-              <th @click="toggleSort('return_pct', 'TW')" class="px-6 py-4 text-right cursor-pointer hover:text-white transition-colors">報酬率 {{ getSortArrow('return_pct', 'TW') }}</th>
-              <th class="px-6 py-4 text-center">📊 買入分數</th>
-              <th class="px-6 py-4 text-right">💰 建議買價</th>
-              <th class="px-6 py-4 text-right">💵 建議加碼</th>
-              <th class="px-6 py-4 text-center">📅 財報日期</th>
-              <th class="px-6 py-4 text-center">操作</th>
+              <th @click="toggleSort('symbol', 'TW')" class="px-4 py-3 text-left cursor-pointer hover:text-white transition-colors">股票 {{ getSortArrow('symbol', 'TW') }}</th>
+              <th @click="toggleSort('total_quantity', 'TW')" class="px-4 py-3 text-right cursor-pointer hover:text-white transition-colors">股數 {{ getSortArrow('total_quantity', 'TW') }}</th>
+              <th @click="toggleSort('avg_cost', 'TW')" class="px-4 py-3 text-right cursor-pointer hover:text-white transition-colors">成本 {{ getSortArrow('avg_cost', 'TW') }}</th>
+              <th @click="toggleSort('current_price', 'TW')" class="px-4 py-3 text-right cursor-pointer hover:text-white transition-colors">現價 {{ getSortArrow('current_price', 'TW') }}</th>
+              <th @click="toggleSort('return_pct', 'TW')" class="px-4 py-3 text-right cursor-pointer hover:text-white transition-colors">報酬 {{ getSortArrow('return_pct', 'TW') }}</th>
+              <th class="px-4 py-3 text-left">智慧分析</th>
+              <th class="px-4 py-3 text-center">操作</th>
             </tr>
           </thead>
           <tbody>
@@ -197,53 +165,47 @@
               :key="holding.id"
               class="border-b border-white/5 hover:bg-white/5 transition-colors"
             >
-              <td class="px-6 py-4 font-semibold">{{ holding.symbol.replace('.TW', '') }}</td>
-              <td class="px-6 py-4 text-gray-300">{{ holding.name || '--' }}</td>
-              <td class="px-6 py-4 text-right font-mono">{{ formatQuantity(holding.total_quantity) }}</td>
-              <td class="px-6 py-4 text-right font-mono">{{ formatCurrency(holding.avg_cost, 'TW') }}</td>
-              <td class="px-6 py-4 text-right font-mono">
+              <!-- 股票：代號+名稱合併 -->
+              <td class="px-4 py-3">
+                <div class="font-semibold">{{ holding.symbol.replace('.TW', '') }}</div>
+                <div class="text-xs text-gray-500">{{ holding.name || '--' }}</div>
+              </td>
+              <td class="px-4 py-3 text-right font-mono">{{ formatQuantity(holding.total_quantity) }}</td>
+              <td class="px-4 py-3 text-right font-mono text-sm">{{ formatCurrency(holding.avg_cost, 'TW') }}</td>
+              <td class="px-4 py-3 text-right font-mono text-sm">
                 {{ holding.current_price ? formatCurrency(holding.current_price, 'TW') : '--' }}
               </td>
-              <td class="px-6 py-4 text-right font-semibold">
-                <span :class="holding.return_pct >= 0 ? 'text-red-400' : 'text-green-400'">
+              <td class="px-4 py-3 text-right font-semibold">
+                <span :class="holding.return_pct >= 0 ? 'text-green-400' : 'text-red-400'">
                   {{ holding.return_pct >= 0 ? '+' : '' }}{{ holding.return_pct?.toFixed(2) }}%
                 </span>
               </td>
-              <!-- 買入分數 -->
-              <td class="px-6 py-4 text-center">
-                <span v-if="holding.buy_signal" class="px-2 py-1 rounded-lg text-sm font-semibold"
-                      :class="getBuyScoreClass(holding.buy_signal.buy_score)">
-                  {{ holding.buy_signal.buy_score }}分
-                </span>
-                <span v-else class="text-gray-500">--</span>
-              </td>
-              <!-- 建議買價 -->
-              <td class="px-6 py-4 text-right">
-                <div v-if="holding.buy_signal">
-                  <span class="text-sm">{{ holding.buy_signal.buy_status }}</span>
+              <!-- 智慧分析：合併多個欄位 -->
+              <td class="px-4 py-3">
+                <div v-if="holding.buy_signal" class="space-y-1">
+                  <div class="flex items-center gap-2">
+                    <span class="px-2 py-0.5 rounded text-xs font-semibold"
+                          :class="getBuyScoreClass(holding.buy_signal.buy_score)">
+                      {{ holding.buy_signal.buy_score }}分
+                    </span>
+                    <span v-if="holding.buy_signal.suggested_amount > 0" class="text-cyan-400 text-xs">
+                      +{{ formatCurrency(holding.buy_signal.suggested_amount, 'TW') }}
+                    </span>
+                  </div>
+                  <div class="text-xs text-gray-500">
+                    {{ holding.buy_signal.buy_status }}
+                    <span v-if="holding.buy_signal.earnings_date" :class="getEarningsDateClass(holding.buy_signal.earnings_date)">
+                      · {{ formatEarningsDate(holding.buy_signal.earnings_date) }}
+                    </span>
+                  </div>
                 </div>
-                <span v-else class="text-gray-500">--</span>
+                <span v-else class="text-gray-500 text-sm">--</span>
               </td>
-              <!-- 建議加碼 -->
-              <td class="px-6 py-4 text-right font-mono">
-                <span v-if="holding.buy_signal && holding.buy_signal.suggested_amount > 0" class="text-cyan-400">
-                  {{ formatCurrency(holding.buy_signal.suggested_amount, 'TW') }}
-                </span>
-                <span v-else class="text-gray-500">--</span>
-              </td>
-              <!-- 財報日期 -->
-              <td class="px-6 py-4 text-center">
-                <span v-if="holding.buy_signal && holding.buy_signal.earnings_date" 
-                      :class="getEarningsDateClass(holding.buy_signal.earnings_date)">
-                  {{ formatEarningsDate(holding.buy_signal.earnings_date) }}
-                </span>
-                <span v-else class="text-gray-500">--</span>
-              </td>
-              <td class="px-6 py-4 text-center">
-                <div class="flex items-center justify-center gap-2">
-                  <button @click="openAddTransaction(holding)" class="p-2 hover:bg-white/10 rounded-lg" title="補倉">➕</button>
-                  <button @click="viewTransactions(holding)" class="p-2 hover:bg-white/10 rounded-lg" title="查看記錄">📋</button>
-                  <button @click="confirmDelete(holding)" class="p-2 hover:bg-red-500/20 rounded-lg text-red-400" title="刪除">🗑️</button>
+              <td class="px-4 py-3 text-center">
+                <div class="flex items-center justify-center gap-1">
+                  <button @click="openAddTransaction(holding)" class="p-1.5 hover:bg-white/10 rounded-lg" title="補倉">➕</button>
+                  <button @click="viewTransactions(holding)" class="p-1.5 hover:bg-white/10 rounded-lg" title="查看記錄">📋</button>
+                  <button @click="confirmDelete(holding)" class="p-1.5 hover:bg-red-500/20 rounded-lg text-red-400" title="刪除">🗑️</button>
                 </div>
               </td>
             </tr>
@@ -335,12 +297,33 @@
                   class="w-full bg-white/10 rounded-xl pl-12 pr-4 py-3 border border-white/10"
                   placeholder="100.00"
                   required
-                  @input="calculateQuantity"
                 >
               </div>
               <p v-if="form.price !== null && form.price <= 0" class="text-rose-400 text-xs mt-1">價格必須大於 0</p>
             </div>
-            <div>
+            
+            <!-- 輸入模式切換 -->
+            <div class="flex bg-white/5 rounded-xl p-1">
+              <button 
+                type="button"
+                @click="switchInputMode('amount')"
+                :class="form.inputMode === 'amount' ? 'bg-cyan-500/20 text-cyan-400' : 'text-gray-400 hover:text-gray-300'"
+                class="flex-1 py-2 rounded-lg text-sm font-medium transition-colors"
+              >
+                💰 填金額算股數
+              </button>
+              <button
+                type="button"
+                @click="switchInputMode('quantity')"
+                :class="form.inputMode === 'quantity' ? 'bg-cyan-500/20 text-cyan-400' : 'text-gray-400 hover:text-gray-300'"
+                class="flex-1 py-2 rounded-lg text-sm font-medium transition-colors"
+              >
+                📊 填股數算金額
+              </button>
+            </div>
+            
+            <!-- 模式 A：填金額算股數 -->
+            <div v-if="form.inputMode === 'amount'">
               <label class="block text-sm text-gray-400 mb-2">買入金額 {{ form.market === 'US' ? '(USD)' : '(TWD)' }}</label>
               <div class="relative">
                 <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">{{ form.market === 'US' ? '$' : 'NT$' }}</span>
@@ -352,20 +335,44 @@
                   class="w-full bg-white/10 rounded-xl pl-12 pr-4 py-3 border border-white/10"
                   placeholder="10000"
                   required
-                  @input="calculateQuantity"
                 >
               </div>
               <p v-if="form.amount !== null && form.amount <= 0" class="text-rose-400 text-xs mt-1">金額必須大於 0</p>
             </div>
-            <div class="glass rounded-xl p-4 bg-white/5">
+            
+            <!-- 模式 B：填股數算金額 -->
+            <div v-if="form.inputMode === 'quantity'">
+              <label class="block text-sm text-gray-400 mb-2">買入股數</label>
+              <input 
+                v-model.number="form.quantity" 
+                type="number" 
+                :step="form.market === 'TW' ? '1' : '0.00001'"
+                min="0.00001"
+                class="w-full bg-white/10 rounded-xl px-4 py-3 border border-white/10"
+                :placeholder="form.market === 'TW' ? '100' : '10.5'"
+                required
+              >
+              <p v-if="form.quantity !== null && form.quantity <= 0" class="text-rose-400 text-xs mt-1">股數必須大於 0</p>
+            </div>
+            
+            <!-- 計算結果顯示 -->
+            <div class="glass rounded-xl p-4 bg-gradient-to-r from-cyan-500/10 to-purple-500/10 border border-cyan-500/20">
               <div class="flex justify-between items-center">
-                <span class="text-gray-400">可持有股數</span>
-                <span class="text-2xl font-bold text-cyan-400">{{ calculatedQuantity }}</span>
+                <span class="text-gray-400">{{ form.inputMode === 'amount' ? '可持有股數' : '需投入金額' }}</span>
+                <span class="text-2xl font-bold text-cyan-400">
+                  {{ form.inputMode === 'amount' ? calculatedQuantity : calculatedAmountDisplay }}
+                </span>
               </div>
-              <p class="text-xs text-gray-500 mt-1" v-if="form.price && form.amount">
-                {{ form.amount }} ÷ {{ form.price }} = {{ calculatedQuantity }} 股
+              <p class="text-xs text-gray-500 mt-1" v-if="form.price && (form.inputMode === 'amount' ? form.amount : form.quantity)">
+                <template v-if="form.inputMode === 'amount'">
+                  {{ form.amount }} ÷ {{ form.price }} = {{ calculatedQuantity }} 股
+                </template>
+                <template v-else>
+                  {{ form.price }} × {{ form.quantity }} = {{ calculatedAmountDisplay }}
+                </template>
               </p>
             </div>
+            
             <div>
               <label class="block text-sm text-gray-400 mb-2">備註（選填）</label>
               <input 
@@ -407,7 +414,29 @@
                 >
               </div>
             </div>
-            <div>
+            
+            <!-- 輸入模式切換 -->
+            <div class="flex bg-white/5 rounded-xl p-1">
+              <button 
+                type="button"
+                @click="switchTransactionInputMode('amount')"
+                :class="transactionForm.inputMode === 'amount' ? 'bg-cyan-500/20 text-cyan-400' : 'text-gray-400 hover:text-gray-300'"
+                class="flex-1 py-2 rounded-lg text-sm font-medium transition-colors"
+              >
+                💰 填金額算股數
+              </button>
+              <button
+                type="button"
+                @click="switchTransactionInputMode('quantity')"
+                :class="transactionForm.inputMode === 'quantity' ? 'bg-cyan-500/20 text-cyan-400' : 'text-gray-400 hover:text-gray-300'"
+                class="flex-1 py-2 rounded-lg text-sm font-medium transition-colors"
+              >
+                📊 填股數算金額
+              </button>
+            </div>
+            
+            <!-- 模式 A：填金額算股數 -->
+            <div v-if="transactionForm.inputMode === 'amount'">
               <label class="block text-sm text-gray-400 mb-2">補倉金額 {{ selectedHolding?.market === 'US' ? '(USD)' : '(TWD)' }}</label>
               <div class="relative">
                 <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">{{ selectedHolding?.market === 'US' ? '$' : 'NT$' }}</span>
@@ -421,12 +450,39 @@
                 >
               </div>
             </div>
-            <div class="glass rounded-xl p-4 bg-white/5">
-              <div class="flex justify-between items-center">
-                <span class="text-gray-400">可持有股數</span>
-                <span class="text-2xl font-bold text-cyan-400">{{ calculatedTransactionQty }}</span>
-              </div>
+            
+            <!-- 模式 B：填股數算金額 -->
+            <div v-if="transactionForm.inputMode === 'quantity'">
+              <label class="block text-sm text-gray-400 mb-2">補倉股數</label>
+              <input 
+                v-model.number="transactionForm.quantity" 
+                type="number" 
+                :step="selectedHolding?.market === 'TW' ? '1' : '0.00001'"
+                min="0.00001"
+                class="w-full bg-white/10 rounded-xl px-4 py-3 border border-white/10"
+                :placeholder="selectedHolding?.market === 'TW' ? '100' : '10.5'"
+                required
+              >
             </div>
+            
+            <!-- 計算結果顯示 -->
+            <div class="glass rounded-xl p-4 bg-gradient-to-r from-cyan-500/10 to-purple-500/10 border border-cyan-500/20">
+              <div class="flex justify-between items-center">
+                <span class="text-gray-400">{{ transactionForm.inputMode === 'amount' ? '可持有股數' : '需投入金額' }}</span>
+                <span class="text-2xl font-bold text-cyan-400">
+                  {{ transactionForm.inputMode === 'amount' ? calculatedTransactionQty : calculatedTransactionAmountDisplay }}
+                </span>
+              </div>
+              <p class="text-xs text-gray-500 mt-1" v-if="transactionForm.price && (transactionForm.inputMode === 'amount' ? transactionForm.amount : transactionForm.quantity)">
+                <template v-if="transactionForm.inputMode === 'amount'">
+                  {{ transactionForm.amount }} ÷ {{ transactionForm.price }} = {{ calculatedTransactionQty }} 股
+                </template>
+                <template v-else>
+                  {{ transactionForm.price }} × {{ transactionForm.quantity }} = {{ calculatedTransactionAmountDisplay }}
+                </template>
+              </p>
+            </div>
+            
             <div>
               <label class="block text-sm text-gray-400 mb-2">備註（選填）</label>
               <input 
@@ -448,6 +504,7 @@
         </form>
       </div>
     </div>
+
 
     <!-- 交易記錄彈窗 -->
     <div v-if="showHistoryModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50" @click.self="showHistoryModal = false">
@@ -593,7 +650,9 @@ const form = ref({
   market: 'TW',
   symbol: '',
   price: null,
-  amount: null,  // 買入金額
+  amount: null,      // 買入金額
+  quantity: null,    // 買入股數（新增）
+  inputMode: 'amount', // 'amount' 或 'quantity'（新增）
   note: ''
 })
 
@@ -631,11 +690,13 @@ const transactionForm = ref({
   quantity: null,
   price: null,
   amount: null,
+  inputMode: 'amount', // 'amount' 或 'quantity'（新增）
   note: ''
 })
 
-// 計算可持有股數
+// 計算可持有股數（模式：金額 → 股數）
 const calculatedQuantity = computed(() => {
+  if (form.value.inputMode !== 'amount') return '--'
   if (!form.value.price || !form.value.amount || form.value.price <= 0) {
     return '--'
   }
@@ -647,8 +708,26 @@ const calculatedQuantity = computed(() => {
   return parseFloat(qty.toFixed(5))
 })
 
-// 補倉計算股數
+// 計算需投入金額（模式：股數 → 金額）
+const calculatedAmount = computed(() => {
+  if (form.value.inputMode !== 'quantity') return null
+  if (!form.value.price || !form.value.quantity || form.value.price <= 0) {
+    return null
+  }
+  return parseFloat((form.value.price * form.value.quantity).toFixed(2))
+})
+
+// 格式化顯示金額
+const calculatedAmountDisplay = computed(() => {
+  const amount = calculatedAmount.value
+  if (amount === null) return '--'
+  const prefix = form.value.market === 'US' ? '$' : 'NT$'
+  return `${prefix}${amount.toLocaleString()}`
+})
+
+// 補倉計算股數（模式：金額 → 股數）
 const calculatedTransactionQty = computed(() => {
+  if (transactionForm.value.inputMode !== 'amount') return '--'
   if (!transactionForm.value.price || !transactionForm.value.amount || transactionForm.value.price <= 0) {
     return '--'
   }
@@ -659,8 +738,43 @@ const calculatedTransactionQty = computed(() => {
   return parseFloat(qty.toFixed(5))
 })
 
-function calculateQuantity() {
-  // 觸發 computed 更新（v-model 已自動處理）
+// 補倉計算金額（模式：股數 → 金額）
+const calculatedTransactionAmount = computed(() => {
+  if (transactionForm.value.inputMode !== 'quantity') return null
+  if (!transactionForm.value.price || !transactionForm.value.quantity || transactionForm.value.price <= 0) {
+    return null
+  }
+  return parseFloat((transactionForm.value.price * transactionForm.value.quantity).toFixed(2))
+})
+
+// 補倉格式化顯示金額
+const calculatedTransactionAmountDisplay = computed(() => {
+  const amount = calculatedTransactionAmount.value
+  if (amount === null) return '--'
+  const prefix = selectedHolding.value?.market === 'US' ? '$' : 'NT$'
+  return `${prefix}${amount.toLocaleString()}`
+})
+
+// 切換新增持股的輸入模式
+function switchInputMode(mode) {
+  form.value.inputMode = mode
+  // 切換時清除對應欄位
+  if (mode === 'amount') {
+    form.value.quantity = null
+  } else {
+    form.value.amount = null
+  }
+}
+
+// 切換補倉的輸入模式
+function switchTransactionInputMode(mode) {
+  transactionForm.value.inputMode = mode
+  // 切換時清除對應欄位
+  if (mode === 'amount') {
+    transactionForm.value.quantity = null
+  } else {
+    transactionForm.value.amount = null
+  }
 }
 
 // 取得持股列表
@@ -692,26 +806,39 @@ async function addHolding() {
     toast.error('價格必須大於 0')
     return
   }
-  if (!form.value.amount || form.value.amount <= 0) {
-    toast.error('金額必須大於 0')
-    return
+  
+  // 根據模式驗證對應欄位
+  let finalQuantity
+  if (form.value.inputMode === 'amount') {
+    if (!form.value.amount || form.value.amount <= 0) {
+      toast.error('金額必須大於 0')
+      return
+    }
+    if (calculatedQuantity.value === '--' || calculatedQuantity.value <= 0) {
+      toast.error('請輸入有效的價格和金額')
+      return
+    }
+    finalQuantity = calculatedQuantity.value
+  } else {
+    if (!form.value.quantity || form.value.quantity <= 0) {
+      toast.error('股數必須大於 0')
+      return
+    }
+    finalQuantity = form.value.quantity
   }
-  if (calculatedQuantity.value === '--' || calculatedQuantity.value <= 0) {
-    toast.error('請輸入有效的價格和金額')
-    return
-  }
+  
   try {
     loading.value = true
     const data = {
       symbol: form.value.symbol,
       market: form.value.market,
       price: form.value.price,
-      quantity: calculatedQuantity.value,
+      quantity: finalQuantity,
       note: form.value.note
     }
     await createHolding(data)
     showAddModal.value = false
-    form.value = { market: 'TW', symbol: '', price: null, amount: null, note: '' }
+    form.value = { market: 'TW', symbol: '', price: null, amount: null, quantity: null, inputMode: 'amount', note: '' }
     toast.success(`成功新增 ${data.symbol} 持股！`)
     await fetchHoldings()
   } catch (error) {
@@ -725,7 +852,7 @@ async function addHolding() {
 // 開啟補倉彈窗
 function openAddTransaction(holding) {
   selectedHolding.value = holding
-  transactionForm.value = { price: null, amount: null, note: '' }
+  transactionForm.value = { price: null, amount: null, quantity: null, inputMode: 'amount', note: '' }
   showTransactionModal.value = true
 }
 
@@ -735,19 +862,32 @@ async function addTransactionSubmit() {
     toast.error('價格必須大於 0')
     return
   }
-  if (!transactionForm.value.amount || transactionForm.value.amount <= 0) {
-    toast.error('金額必須大於 0')
-    return
+  
+  // 根據模式驗證對應欄位
+  let finalQuantity
+  if (transactionForm.value.inputMode === 'amount') {
+    if (!transactionForm.value.amount || transactionForm.value.amount <= 0) {
+      toast.error('金額必須大於 0')
+      return
+    }
+    if (calculatedTransactionQty.value === '--' || calculatedTransactionQty.value <= 0) {
+      toast.error('請輸入有效的價格和金額')
+      return
+    }
+    finalQuantity = calculatedTransactionQty.value
+  } else {
+    if (!transactionForm.value.quantity || transactionForm.value.quantity <= 0) {
+      toast.error('股數必須大於 0')
+      return
+    }
+    finalQuantity = transactionForm.value.quantity
   }
-  if (calculatedTransactionQty.value === '--' || calculatedTransactionQty.value <= 0) {
-    toast.error('請輸入有效的價格和金額')
-    return
-  }
+  
   try {
     loading.value = true
     const data = {
       price: transactionForm.value.price,
-      quantity: calculatedTransactionQty.value,
+      quantity: finalQuantity,
       note: transactionForm.value.note
     }
     await addTransaction(selectedHolding.value.id, data)

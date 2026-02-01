@@ -28,83 +28,88 @@
     </div>
 
     <!-- 搜尋列 -->
-    <div class="max-w-md">
+    <div class="max-w-xl">
       <StockSearch :stocks="stocks" @select="openChart" />
     </div>
 
     <!-- 市場狀態卡片 -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
       <!-- 骨架屏 -->
       <template v-if="loading && !stocks.TW?.length && !stocks.US?.length">
-        <div v-for="i in 3" :key="i" class="glass rounded-2xl p-6 animate-pulse">
-          <div class="flex items-center gap-3 mb-4">
-            <div class="w-10 h-10 bg-white/10 rounded-full"></div>
-            <div class="space-y-2">
+        <div v-for="i in 3" :key="i" class="glass rounded-xl p-4 animate-pulse">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 bg-white/10 rounded-full"></div>
+            <div class="space-y-1 flex-1">
               <div class="h-4 w-20 bg-white/10 rounded"></div>
               <div class="h-3 w-16 bg-white/10 rounded"></div>
             </div>
           </div>
-          <div class="h-4 w-24 bg-white/10 rounded"></div>
         </div>
       </template>
 
       <!-- 台股 -->
-      <div v-else class="glass rounded-2xl p-6">
-        <div class="flex items-center gap-3 mb-4">
-          <span class="text-3xl">🇹🇼</span>
-          <div>
-            <h3 class="font-semibold text-lg">台股市場</h3>
-            <p class="text-gray-400 text-sm">{{ marketStatus.TW?.local_time || '--:--' }}</p>
+      <div v-else class="glass rounded-xl p-4">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="text-2xl">🇹🇼</span>
+            <div>
+              <h3 class="font-semibold">台股市場</h3>
+              <p class="text-gray-500 text-xs">{{ marketStatus.TW?.local_time || '--:--' }}</p>
+            </div>
           </div>
-        </div>
-        <div class="flex items-center gap-2">
-          <span 
-            class="w-3 h-3 rounded-full"
-            :class="marketStatus.TW?.is_open ? 'bg-emerald-400 animate-pulse' : 'bg-rose-400'"
-          ></span>
-          <span :class="marketStatus.TW?.is_open ? 'text-emerald-400' : 'text-rose-400'">
-            {{ marketStatus.TW?.status || '載入中...' }}
-          </span>
+          <div class="flex items-center gap-2">
+            <span 
+              class="w-2 h-2 rounded-full"
+              :class="marketStatus.TW?.is_open ? 'bg-emerald-400 animate-pulse' : 'bg-rose-400'"
+            ></span>
+            <span class="text-sm" :class="marketStatus.TW?.is_open ? 'text-emerald-400' : 'text-rose-400'">
+              {{ marketStatus.TW?.status || '載入中...' }}
+            </span>
+          </div>
         </div>
       </div>
 
       <!-- 美股 -->
-      <div v-if="!loading || stocks.TW?.length || stocks.US?.length" class="glass rounded-2xl p-6">
-        <div class="flex items-center gap-3 mb-4">
-          <span class="text-3xl">🇺🇸</span>
-          <div>
-            <h3 class="font-semibold text-lg">美股市場</h3>
-            <p class="text-gray-400 text-sm">{{ marketStatus.US?.local_time || '--:--' }}</p>
+      <div v-if="!loading || stocks.TW?.length || stocks.US?.length" class="glass rounded-xl p-4">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="text-2xl">🇺🇸</span>
+            <div>
+              <h3 class="font-semibold">美股市場</h3>
+              <p class="text-gray-500 text-xs">{{ marketStatus.US?.local_time || '--:--' }}</p>
+            </div>
           </div>
-        </div>
-        <div class="flex items-center gap-2">
-          <span 
-            class="w-3 h-3 rounded-full"
-            :class="marketStatus.US?.is_open ? 'bg-emerald-400 animate-pulse' : 'bg-rose-400'"
-          ></span>
-          <span :class="marketStatus.US?.is_open ? 'text-emerald-400' : 'text-rose-400'">
-            {{ marketStatus.US?.status || '載入中...' }}
-          </span>
+          <div class="flex items-center gap-2">
+            <span 
+              class="w-2 h-2 rounded-full"
+              :class="marketStatus.US?.is_open ? 'bg-emerald-400 animate-pulse' : 'bg-rose-400'"
+            ></span>
+            <span class="text-sm" :class="marketStatus.US?.is_open ? 'text-emerald-400' : 'text-rose-400'">
+              {{ marketStatus.US?.status || '載入中...' }}
+            </span>
+          </div>
         </div>
       </div>
 
       <!-- 監控統計 -->
-      <div v-if="!loading || stocks.TW?.length || stocks.US?.length" class="glass rounded-2xl p-6">
-        <div class="flex items-center gap-3 mb-4">
-          <span class="text-3xl">📈</span>
-          <div>
-            <h3 class="font-semibold text-lg">監控統計</h3>
-            <p class="text-gray-400 text-sm">即時追蹤</p>
+      <div v-if="!loading || stocks.TW?.length || stocks.US?.length" class="glass rounded-xl p-4">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="text-2xl">📈</span>
+            <div>
+              <h3 class="font-semibold">監控統計</h3>
+              <p class="text-gray-500 text-xs">即時追蹤</p>
+            </div>
           </div>
-        </div>
-        <div class="flex gap-4 text-center">
-          <div>
-            <p class="text-2xl font-bold text-cyan-400">{{ stocks.TW?.length || 0 }}</p>
-            <p class="text-gray-400 text-sm">台股</p>
-          </div>
-          <div>
-            <p class="text-2xl font-bold text-purple-400">{{ stocks.US?.length || 0 }}</p>
-            <p class="text-gray-400 text-sm">美股</p>
+          <div class="flex gap-4 text-center">
+            <div>
+              <p class="text-lg font-bold text-cyan-400">{{ stocks.TW?.length || 0 }}</p>
+              <p class="text-gray-500 text-xs">台股</p>
+            </div>
+            <div>
+              <p class="text-lg font-bold text-purple-400">{{ stocks.US?.length || 0 }}</p>
+              <p class="text-gray-500 text-xs">美股</p>
+            </div>
           </div>
         </div>
       </div>

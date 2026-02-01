@@ -6,7 +6,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, model_validator
 from typing import Optional, List, Literal
 import re
 
@@ -25,19 +25,23 @@ class StockAdd(BaseModel):
     symbol: str = Field(..., min_length=1, max_length=10, description="股票代號")
     market: Literal["TW", "US"] = Field(default="US", description="市場：TW 或 US")
     
-    @field_validator('symbol')
-    @classmethod
-    def validate_symbol(cls, v: str, info) -> str:
-        v = v.upper().strip()
-        market = info.data.get('market', 'US')
+    @model_validator(mode='after')
+    def validate_symbol_by_market(self):
+        """根據市場類型驗證股票代號格式"""
+        symbol = self.symbol.upper().strip()
+        market = self.market
+        
         if market == 'US':
-            if not re.match(r'^[A-Z]{1,5}$', v):
+            if not re.match(r'^[A-Z]{1,5}$', symbol):
                 raise ValueError('美股代號必須是 1-5 個大寫英文字母')
-        else:
-            clean = v.replace('.TW', '')
+        else:  # TW
+            clean = symbol.replace('.TW', '')
             if not re.match(r'^\d{4,6}$', clean):
                 raise ValueError('台股代號必須是 4-6 位數字')
-        return v
+        
+        # 更新 symbol 為大寫
+        self.symbol = symbol
+        return self
 
 
 class StockRemove(BaseModel):

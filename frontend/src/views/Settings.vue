@@ -9,105 +9,18 @@
     </div>
 
     <div v-else class="space-y-8">
-      <!-- ========== 股票管理區塊 ========== -->
-      <div class="glass rounded-2xl p-6">
-        <h2 class="text-2xl font-bold mb-6">📈 股票觀察清單</h2>
-        
-        <!-- 新增股票 -->
-        <div class="flex gap-4 mb-6">
-          <select v-model="newStockMarket" class="bg-dark-800 border border-white/10 rounded-xl px-4 py-3 text-white">
-            <option value="US">🇺🇸 美股</option>
-            <option value="TW">🇹🇼 台股</option>
-          </select>
-          <input
-            v-model="newStockSymbol"
-            type="text"
-            :placeholder="newStockMarket === 'TW' ? '輸入股票代號 (如: 2330)' : '輸入股票代號 (如: AAPL)'"
-            class="flex-1 bg-dark-800 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500"
-            @keyup.enter="addStock"
-          />
-          <button
-            @click="addStock"
-            :disabled="addingStock || !newStockSymbol.trim()"
-            class="px-6 py-3 btn-gradient rounded-xl font-semibold disabled:opacity-50"
-          >
-            {{ addingStock ? '新增中...' : '➕ 新增' }}
-          </button>
-        </div>
-
-        <!-- 新增結果訊息 -->
-        <p v-if="stockMessage" :class="stockMessage.success ? 'text-emerald-400' : 'text-rose-400'" class="mb-4 text-sm">
-          {{ stockMessage.text }}
-        </p>
-
-        <!-- Tab 切換 -->
-        <div class="flex gap-2 mb-6">
-          <button 
-            @click="activeTab = 'US'" 
-            class="px-6 py-3 rounded-xl font-semibold transition-all"
-            :class="activeTab === 'US' ? 'btn-gradient' : 'bg-white/10 hover:bg-white/20'"
-          >
-            🇺🇸 美股 ({{ watchlist.US.length }})
-          </button>
-          <button 
-            @click="activeTab = 'TW'" 
-            class="px-6 py-3 rounded-xl font-semibold transition-all"
-            :class="activeTab === 'TW' ? 'btn-gradient' : 'bg-white/10 hover:bg-white/20'"
-          >
-            🇹🇼 台股 ({{ watchlist.TW.length }})
-          </button>
-        </div>
-
-        <!-- 股票列表 -->
-        <div class="bg-dark-800/50 rounded-xl p-4">
-          <!-- 美股 -->
-          <div v-show="activeTab === 'US'">
-            <div v-if="watchlist.US.length === 0" class="text-gray-500 text-center py-8">
-              <span class="text-4xl mb-3 block">📊</span>
-              尚無觀察股票，使用上方輸入框新增
-            </div>
-            <div v-else class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-              <div
-                v-for="symbol in watchlist.US"
-                :key="symbol"
-                class="flex items-center justify-between bg-dark-700 rounded-lg px-4 py-3 group hover:bg-dark-600 transition-colors"
-              >
-                <span class="font-mono font-semibold">{{ symbol }}</span>
-                <button
-                  @click="confirmRemoveStock(symbol, 'US')"
-                  class="text-rose-400 hover:text-rose-300 transition-colors opacity-50 group-hover:opacity-100"
-                  title="移除"
-                >
-                  ✕
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <!-- 台股 -->
-          <div v-show="activeTab === 'TW'">
-            <div v-if="watchlist.TW.length === 0" class="text-gray-500 text-center py-8">
-              <span class="text-4xl mb-3 block">📊</span>
-              尚無觀察股票，使用上方輸入框新增
-            </div>
-            <div v-else class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-              <div
-                v-for="symbol in watchlist.TW"
-                :key="symbol"
-                class="flex items-center justify-between bg-dark-700 rounded-lg px-4 py-3 group hover:bg-dark-600 transition-colors"
-              >
-                <span class="font-mono font-semibold">{{ symbol.replace('.TW', '') }}</span>
-                <button
-                  @click="confirmRemoveStock(symbol, 'TW')"
-                  class="text-rose-400 hover:text-rose-300 transition-colors opacity-50 group-hover:opacity-100"
-                  title="移除"
-                >
-                  ✕
-                </button>
-              </div>
-            </div>
+      <!-- 觀察清單已移至獨立頁面 -->
+      <div class="glass rounded-xl p-4 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <span class="text-2xl">📋</span>
+          <div>
+            <p class="font-semibold">股票觀察清單</p>
+            <p class="text-gray-400 text-sm">管理您追蹤的股票</p>
           </div>
         </div>
+        <router-link to="/watchlist" class="px-4 py-2 btn-gradient rounded-xl font-semibold">
+          前往管理 →
+        </router-link>
       </div>
 
       <!-- ========== 通知設定區塊 ========== -->
@@ -247,31 +160,7 @@
       </div>
     </div>
 
-    <!-- 刪除確認彈窗 -->
-    <div v-if="showDeleteConfirm" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50" @click.self="showDeleteConfirm = false">
-      <div class="glass rounded-2xl p-8 w-full max-w-sm mx-4 text-center">
-        <span class="text-5xl mb-4 block">⚠️</span>
-        <h3 class="text-xl font-bold mb-3">確認移除</h3>
-        <p class="text-gray-400 mb-6">
-          確定要從觀察清單中移除<br>
-          <span class="font-semibold text-white">{{ pendingDeleteStock?.symbol }}</span> 嗎？
-        </p>
-        <div class="flex gap-4">
-          <button 
-            @click="showDeleteConfirm = false" 
-            class="flex-1 px-6 py-3 rounded-xl bg-white/10 hover:bg-white/20 transition-colors"
-          >
-            取消
-          </button>
-          <button 
-            @click="executeRemoveStock" 
-            class="flex-1 px-6 py-3 rounded-xl bg-rose-500 hover:bg-rose-600 transition-colors font-semibold"
-          >
-            確認移除
-          </button>
-        </div>
-      </div>
-    </div>
+
   </div>
 </template>
 
@@ -285,7 +174,6 @@ const toast = useToast()
 const loading = ref(true)
 const saving = ref(false)
 const testingEmail = ref(false)
-const addingStock = ref(false)
 
 // 通知設定
 const settings = ref({
@@ -294,17 +182,6 @@ const settings = ref({
   thresholds_us: '+5 +10 -5 -10',
   enabled: true
 })
-
-// 股票觀察清單
-const watchlist = ref({ TW: [], US: [] })
-const newStockSymbol = ref('')
-const newStockMarket = ref('US')
-const stockMessage = ref(null)
-const activeTab = ref('US')
-
-// 刪除確認
-const showDeleteConfirm = ref(false)
-const pendingDeleteStock = ref(null)
 
 const saveResult = ref(null)
 const testEmailResult = ref(null)
@@ -322,93 +199,12 @@ const passwordForm = ref({
 async function loadData() {
   loading.value = true
   try {
-    const [settingsRes, watchlistRes] = await Promise.all([
-      api.get('/notifications/settings'),
-      api.get('/watchlist/')
-    ])
+    const settingsRes = await api.get('/notifications/settings')
     settings.value = settingsRes.data
-    watchlist.value = watchlistRes.data
   } catch (err) {
     console.error('載入設定失敗', err)
   } finally {
     loading.value = false
-  }
-}
-
-// ========== 股票管理 ==========
-function validateStockSymbol(symbol, market) {
-  symbol = symbol.toUpperCase().trim()
-  if (market === 'US') {
-    if (!/^[A-Z]{1,5}$/.test(symbol)) {
-      return '美股代號必須是 1-5 個英文字母'
-    }
-  } else {
-    const clean = symbol.replace('.TW', '')
-    if (!/^\d{4,6}$/.test(clean)) {
-      return '台股代號必須是 4-6 位數字'
-    }
-  }
-  return null
-}
-
-async function addStock() {
-  if (!newStockSymbol.value.trim()) {
-    toast.error('請輸入股票代號')
-    return
-  }
-  
-  // 驗證格式
-  const validationError = validateStockSymbol(newStockSymbol.value, newStockMarket.value)
-  if (validationError) {
-    toast.error(validationError)
-    return
-  }
-  
-  addingStock.value = true
-  stockMessage.value = null
-  
-  try {
-    const response = await api.post('/watchlist/add', {
-      symbol: newStockSymbol.value.trim(),
-      market: newStockMarket.value
-    })
-    toast.success(response.data.message)
-    newStockSymbol.value = ''
-    
-    // 重新載入觀察清單
-    const watchlistRes = await api.get('/watchlist/')
-    watchlist.value = watchlistRes.data
-  } catch (err) {
-    toast.error(err.response?.data?.detail || '新增失敗')
-  } finally {
-    addingStock.value = false
-  }
-}
-
-// 確認刪除
-function confirmRemoveStock(symbol, market) {
-  pendingDeleteStock.value = { symbol, market }
-  showDeleteConfirm.value = true
-}
-
-// 執行刪除
-async function executeRemoveStock() {
-  if (!pendingDeleteStock.value) return
-  
-  const { symbol, market } = pendingDeleteStock.value
-  showDeleteConfirm.value = false
-  try {
-    await api.post('/watchlist/remove', { symbol, market })
-    
-    // 重新載入觀察清單
-    const watchlistRes = await api.get('/watchlist/')
-    watchlist.value = watchlistRes.data
-    
-    toast.success(`已移除 ${symbol.replace('.TW', '')}`)
-  } catch (err) {
-    toast.error(err.response?.data?.detail || '移除失敗')
-  } finally {
-    pendingDeleteStock.value = null
   }
 }
 

@@ -3,7 +3,7 @@
 根據市場開市狀態自動調整輪詢頻率
 """
 
-from datetime import datetime, time as dtime
+from datetime import datetime, time as dtime, timedelta
 import pytz
 from typing import Literal
 
@@ -15,6 +15,9 @@ TZ_US = pytz.timezone("America/New_York")
 POLLING_NORMAL = 30       # 開市中
 POLLING_LOW = 1800        # 休市（30 分鐘）
 POLLING_SLEEP = 0         # 週末（完全停止）
+
+# 開市前緩衝時間（分鐘）- 提前切換到正常模式
+PRE_MARKET_BUFFER_MINUTES = 5
 
 # 開市時間定義
 MARKET_HOURS = {
@@ -37,12 +40,45 @@ def is_weekday() -> bool:
     return now.weekday() < 5  # 0=週一, 4=週五
 
 
-def is_market_open(market: str = "TW") -> bool:
+def is_near_market_open(market: str = "TW") -> bool:
+    """
+    判斷是否接近開市時間（開市前緩衝時間內）
+    
+    Args:
+        market: "TW" 或 "US"
+    
+    Returns:
+        bool: 是否在開市前緩衝時間內
+    """
+    if market not in MARKET_HOURS:
+        return False
+    
+    hours = MARKET_HOURS[market]
+    now = datetime.now(hours["timezone"])
+    
+    # 週末不開市
+    if now.weekday() >= 5:
+        return False
+    
+    current_time = now.time()
+    open_time = hours["open"]
+    
+    # 計算開市前緩衝時間的起點
+    # 例如開市 9:00，緩衝 5 分鐘 → 8:55 開始算接近開市
+    buffer_start = (datetime.combine(datetime.today(), open_time) - 
+                   timedelta(minutes=PRE_MARKET_BUFFER_MINUTES)).time()
+    
+    # 是否在 [開市前緩衝時間, 開市時間) 之間
+    return buffer_start <= current_time < open_time
+
+
+def is_market_open(market: str = "TW", include_pre_market: bool = False) -> bool:
     """
     判斷指定市場是否開市
     
     Args:
         market: "TW" 或 "US"
+        include_pre_market: 是否包含開市前緩衝時間
     
     Returns:
         bool: 是否開市中
@@ -59,7 +95,13 @@ def is_market_open(market: str = "TW") -> bool:
     
     # 檢查是否在開市時間內
     current_time = now.time()
-    return hours["open"] <= current_time <= hours["close"]
+    is_open = hours["open"] <= current_time <= hours["close"]
+    
+    # 如果包含開市前緩衝時間，也檢查是否接近開市
+    if include_pre_market and not is_open:
+        return is_near_market_open(market)
+    
+    return is_open
 
 
 def get_power_mode() -> Literal["normal", "low", "sleep"]:
@@ -67,12 +109,12 @@ def get_power_mode() -> Literal["normal", "low", "sleep"]:
     取得當前電源模式
     
     Returns:
-        - "normal": 有市場開市中，正常輪詢
+        - "normal": 有市場開市中（或接近開市），正常輪詢
         - "low": 休市但是工作日，低頻率輪詢
         - "sleep": 週末，完全停止輪詢
     """
-    # 檢查任一市場是否開市
-    if is_market_open("TW") or is_market_open("US"):
+    # 檢查任一市場是否開市（包含開市前緩衝時間）
+    if is_market_open("TW", include_pre_market=True) or is_market_open("US", include_pre_market=True):
         return "normal"
     
     # 工作日但休市
@@ -110,6 +152,20 @@ def get_power_status() -> dict:
     mode = get_power_mode()
     interval = get_polling_interval()
     
+    # 判斷各市場狀態
+    tw_open = is_market_open("TW")
+    tw_near = is_near_market_open("TW")
+    us_open = is_market_open("US")
+    us_near = is_near_market_open("US")
+    
+    def get_market_status(is_open: bool, is_near: bool) -> str:
+        if is_open:
+            return "開市中"
+        elif is_near:
+            return "即將開市"
+        else:
+            return "休市"
+    
     return {
         "mode": mode,
         "mode_display": {
@@ -121,13 +177,16 @@ def get_power_status() -> dict:
         "polling_interval_display": f"{interval}秒" if interval > 0 else "已停止",
         "markets": {
             "TW": {
-                "is_open": is_market_open("TW"),
-                "status": "開市中" if is_market_open("TW") else "休市"
+                "is_open": tw_open,
+                "is_near_open": tw_near,
+                "status": get_market_status(tw_open, tw_near)
             },
             "US": {
-                "is_open": is_market_open("US"),
-                "status": "開市中" if is_market_open("US") else "休市"
+                "is_open": us_open,
+                "is_near_open": us_near,
+                "status": get_market_status(us_open, us_near)
             }
         },
-        "is_weekday": is_weekday()
+        "is_weekday": is_weekday(),
+        "pre_market_buffer_minutes": PRE_MARKET_BUFFER_MINUTES
     }

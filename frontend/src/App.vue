@@ -38,6 +38,13 @@
             💼 持股
           </router-link>
           <router-link 
+            to="/watchlist" 
+            class="nav-link"
+            :class="{ 'nav-link-active': $route.path === '/watchlist' }"
+          >
+            📋 觀察
+          </router-link>
+          <router-link 
             to="/settings" 
             class="nav-link"
             :class="{ 'nav-link-active': $route.path === '/settings' }"
@@ -76,6 +83,14 @@
             @click="menuOpen = false"
           >
             💼 持股
+          </router-link>
+          <router-link 
+            to="/watchlist" 
+            class="mobile-nav-link"
+            :class="{ 'mobile-nav-link-active': $route.path === '/watchlist' }"
+            @click="menuOpen = false"
+          >
+            📋 觀察
           </router-link>
           <router-link 
             to="/settings" 

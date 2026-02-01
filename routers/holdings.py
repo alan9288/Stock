@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, model_validator
 from typing import Optional, List, Literal
 from datetime import datetime
 from sqlalchemy import select, and_
@@ -29,22 +29,25 @@ class HoldingCreate(BaseModel):
     transaction_date: Optional[datetime] = None
     note: Optional[str] = Field(None, max_length=200)
     
-    @field_validator('symbol')
-    @classmethod
-    def validate_symbol(cls, v: str, info) -> str:
-        v = v.upper().strip()
-        # 取得 market 值（可能不存在）
-        market = info.data.get('market', 'US')
+    @model_validator(mode='after')
+    def validate_symbol_by_market(self):
+        """根據市場類型驗證股票代號格式"""
+        symbol = self.symbol.upper().strip()
+        market = self.market
+        
         if market == 'US':
             # 美股：1-5 個大寫字母
-            if not re.match(r'^[A-Z]{1,5}$', v):
+            if not re.match(r'^[A-Z]{1,5}$', symbol):
                 raise ValueError('美股代號必須是 1-5 個大寫英文字母（如 AAPL, TSLA）')
         else:
             # 台股：4-6 位數字（可選 .TW 後綴）
-            clean = v.replace('.TW', '')
+            clean = symbol.replace('.TW', '')
             if not re.match(r'^\d{4,6}$', clean):
                 raise ValueError('台股代號必須是 4-6 位數字（如 2330, 0050）')
-        return v
+        
+        # 更新 symbol 為大寫
+        self.symbol = symbol
+        return self
 
 
 class TransactionCreate(BaseModel):
