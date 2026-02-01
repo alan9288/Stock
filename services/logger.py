@@ -91,7 +91,7 @@ def log_request(method: str, path: str, status_code: int, duration_ms: float) ->
     )
 
 
-def log_error(error: Exception, context: dict[str, Any] | None = None) -> None:
+def log_error(error: Exception, context: "dict[str, Any] | None" = None) -> None:
     """記錄錯誤"""
     app_logger.error(
         f"Error: {type(error).__name__}: {str(error)}",
