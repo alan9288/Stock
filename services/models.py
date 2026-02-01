@@ -61,8 +61,8 @@ class WatchlistItem(Base):
     __tablename__ = "watchlist"
     
     id = Column(Integer, primary_key=True, index=True)
-    portfolio_id = Column(Integer, ForeignKey("portfolios.id", ondelete="CASCADE"))
-    symbol = Column(String(20), nullable=False)
+    portfolio_id = Column(Integer, ForeignKey("portfolios.id", ondelete="CASCADE"), index=True)
+    symbol = Column(String(20), nullable=False, index=True)
     added_at = Column(DateTime(timezone=True), server_default=func.now())
     
     # 關聯
@@ -74,8 +74,8 @@ class AlertHistory(Base):
     __tablename__ = "alert_history"
     
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"))
-    symbol = Column(String(20), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    symbol = Column(String(20), nullable=False, index=True)
     stock_name = Column(String(100))
     threshold_hit = Column(String(10))  # 如 "+5" 或 "-10"
     change_pct = Column(String(20))     # 實際漲跌幅
@@ -91,9 +91,9 @@ class Holding(Base):
     __tablename__ = "holdings"
     
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"))
-    symbol = Column(String(20), nullable=False)
-    market = Column(String(10), nullable=False)  # TW 或 US
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    symbol = Column(String(20), nullable=False, index=True)
+    market = Column(String(10), nullable=False, index=True)  # TW 或 US
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
     # 關聯

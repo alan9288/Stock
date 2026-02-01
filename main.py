@@ -4,11 +4,13 @@
 支援多用戶認證
 """
 
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from typing import Optional
 from datetime import datetime, time as dtime
 import pytz
+import time
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -16,6 +18,7 @@ from services.stock_api import stock_api
 from services.database import init_db, get_db
 from services.models import User, Portfolio, WatchlistItem
 from services.power_manager import get_power_status, get_polling_interval
+from services.logger import app_logger, log_request, log_error
 from routers.auth import router as auth_router, get_current_user
 from routers.notifications import router as notifications_router
 from routers.watchlist import router as watchlist_router
@@ -32,6 +35,54 @@ app = FastAPI(
     version="2.0.0"
 )
 
+
+# ==========================================
+# 全域錯誤處理
+# ==========================================
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """全域異常處理器 - 統一錯誤格式"""
+    log_error(exc, {"path": request.url.path, "method": request.method})
+    
+    return JSONResponse(
+        status_code=500,
+        content={
+            "error": "internal_server_error",
+            "message": "伺服器內部錯誤",
+            "detail": str(exc) if app.debug else None
+        }
+    )
+
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    """HTTP 異常處理器"""
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "error": exc.detail,
+            "message": exc.detail,
+            "status_code": exc.status_code
+        }
+    )
+
+
+# ==========================================
+# 請求計時中間件
+# ==========================================
+@app.middleware("http")
+async def log_request_middleware(request: Request, call_next):
+    """記錄請求時間"""
+    start_time = time.time()
+    response = await call_next(request)
+    duration_ms = (time.time() - start_time) * 1000
+    
+    # 只記錄 API 請求
+    if request.url.path.startswith("/api"):
+        log_request(request.method, request.url.path, response.status_code, duration_ms)
+    
+    return response
+
 # 載入路由
 app.include_router(auth_router)
 app.include_router(notifications_router)
@@ -40,19 +91,20 @@ app.include_router(reports_router)
 app.include_router(alerts_router)
 app.include_router(holdings_router)
 
-# CORS 設定（允許 Vue 開發伺服器和生產環境）
+# CORS 設定（僅允許指定的前端域名）
+CORS_ORIGINS = [
+    "http://localhost:5173", 
+    "http://127.0.0.1:5173",
+    "http://localhost:3000",
+    "https://frontend-alan9288s-projects.vercel.app",
+    "https://stock-jade-gamma.vercel.app",
+]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173", 
-        "http://127.0.0.1:5173",
-        "https://frontend-alan9288s-projects.vercel.app",
-        "https://stock-jade-gamma.vercel.app",
-        "*"  # 允許所有來源（生產環境建議改為具體域名）
-    ],
+    allow_origins=CORS_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH"],
+    allow_headers=["Authorization", "Content-Type"],
 )
 
 # 啟動事件：初始化資料庫和排程器

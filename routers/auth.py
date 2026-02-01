@@ -13,7 +13,8 @@ from services.database import get_db
 from services.models import User, NotificationSettings, Portfolio
 from services.auth import (
     UserCreate, UserLogin, UserResponse, Token, TokenData,
-    hash_password, verify_password, create_access_token, decode_access_token
+    hash_password, verify_password, create_access_token, decode_access_token,
+    validate_password_strength
 )
 
 router = APIRouter(prefix="/api/auth", tags=["認證"])
@@ -71,6 +72,14 @@ async def register(user_data: UserCreate, db: AsyncSession = Depends(get_db)):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="此 Email 已被註冊"
+        )
+    
+    # 驗證密碼強度
+    is_valid, message = validate_password_strength(user_data.password)
+    if not is_valid:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=message
         )
     
     # 建立新使用者
@@ -183,11 +192,12 @@ async def change_password(
             detail="現有密碼錯誤"
         )
     
-    # 驗證新密碼長度
-    if len(data.new_password) < 6:
+    # 驗證新密碼強度
+    is_valid, message = validate_password_strength(data.new_password)
+    if not is_valid:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="新密碼至少需要 6 個字元"
+            detail=message
         )
     
     # 更新密碼

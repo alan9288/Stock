@@ -64,6 +64,36 @@ class TokenData(BaseModel):
 # ==========================================
 # 密碼處理
 # ==========================================
+import re
+
+class PasswordValidationError(Exception):
+    """密碼驗證錯誤"""
+    pass
+
+
+def validate_password_strength(password: str) -> tuple[bool, str]:
+    """
+    驗證密碼強度
+    規則：
+    - 至少 8 個字元
+    - 至少包含一個數字
+    - 至少包含一個字母
+    
+    Returns:
+        (is_valid, message)
+    """
+    if len(password) < 8:
+        return False, "密碼至少需要 8 個字元"
+    
+    if not re.search(r"\d", password):
+        return False, "密碼至少需要包含一個數字"
+    
+    if not re.search(r"[a-zA-Z]", password):
+        return False, "密碼至少需要包含一個英文字母"
+    
+    return True, "密碼強度符合要求"
+
+
 def hash_password(password: str) -> str:
     """加密密碼"""
     return pwd_context.hash(password)
