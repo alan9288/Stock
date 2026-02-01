@@ -14,6 +14,7 @@ requests
 # Database
 asyncpg>=0.28.0
 sqlalchemy[asyncio]>=2.0.0
+psycopg2-binary>=2.9.0
 
 # Authentication
 python-jose[cryptography]>=3.3.0
